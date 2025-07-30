@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
-import { Upload, Globe, FileText, Trash2, Plus, Key, AlertTriangle, Check, X } from "lucide-react";
+import { Upload, Globe, FileText, Trash2, Plus, Check, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { FirecrawlService, CrawledData } from "@/utils/FirecrawlService";
+import { CrawlerService, ScrapedPage } from "@/services/CrawlerService";
 
 interface KnowledgeItem {
   id: string;
@@ -15,99 +15,72 @@ interface KnowledgeItem {
   name: string;
   size?: string;
   status: "pending" | "processing" | "completed" | "error";
-  crawledData?: CrawledData[];
+  scrapedPages?: ScrapedPage[];
 }
 
 export function KnowledgeBase() {
   const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([]);
   const [newUrl, setNewUrl] = useState("");
   const [newDomain, setNewDomain] = useState("");
-  const [firecrawlApiKey, setFirecrawlApiKey] = useState("");
-  const [tempApiKey, setTempApiKey] = useState("");
-  const [showApiDialog, setShowApiDialog] = useState(false);
-  const [isFirecrawlConnected, setIsFirecrawlConnected] = useState(false);
+  const [maxPages, setMaxPages] = useState(10);
+  const [scrapedPages, setScrapedPages] = useState<ScrapedPage[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if Firecrawl API key exists
-    const savedApiKey = FirecrawlService.getApiKey();
-    if (savedApiKey) {
-      setFirecrawlApiKey(savedApiKey);
-      setIsFirecrawlConnected(true);
-    }
-
-    // Load existing crawled data
-    const crawledData = FirecrawlService.getCrawledData();
-    if (crawledData.length > 0) {
-      const existingItems: KnowledgeItem[] = [];
-      
-      // Group by domain/URL
-      const urlItems = new Map<string, CrawledData[]>();
-      crawledData.forEach(data => {
-        const key = data.url;
-        if (!urlItems.has(key)) {
-          urlItems.set(key, []);
-        }
-        urlItems.get(key)!.push(data);
-      });
-
-      urlItems.forEach((data, url) => {
-        const isDomain = data.length > 1;
-        existingItems.push({
-          id: crypto.randomUUID(),
-          type: isDomain ? "domain" : "url",
-          name: isDomain ? new URL(url).hostname : url,
-          status: "completed",
-          crawledData: data
-        });
-      });
-
-      setKnowledgeItems(existingItems);
-    }
+    loadScrapedPages();
   }, []);
 
-  const handleSaveFirecrawlApiKey = async () => {
-    if (!tempApiKey.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid Firecrawl API key.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Test the API key
-    const isValid = await FirecrawlService.testApiKey(tempApiKey);
-    if (!isValid) {
-      toast({
-        title: "Invalid API Key",
-        description: "The Firecrawl API key is invalid. Please check and try again.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    FirecrawlService.saveApiKey(tempApiKey);
-    setFirecrawlApiKey(tempApiKey);
-    setIsFirecrawlConnected(true);
-    setShowApiDialog(false);
-    setTempApiKey("");
+  const loadScrapedPages = async () => {
+    const pages = await CrawlerService.getScrapedPages();
+    setScrapedPages(pages);
     
-    toast({
-      title: "Firecrawl Connected",
-      description: "Firecrawl API key has been saved. You can now crawl websites!",
+    // Convert scraped pages to knowledge items for display
+    const items: KnowledgeItem[] = [];
+    const domainGroups = new Map<string, ScrapedPage[]>();
+    
+    pages.forEach(page => {
+      try {
+        const hostname = new URL(page.url).hostname;
+        if (!domainGroups.has(hostname)) {
+          domainGroups.set(hostname, []);
+        }
+        domainGroups.get(hostname)!.push(page);
+      } catch (error) {
+        // Handle individual URLs that don't parse
+        items.push({
+          id: page.id,
+          type: "url",
+          name: page.url,
+          status: "completed",
+          scrapedPages: [page]
+        });
+      }
     });
+
+    // Group by domain
+    domainGroups.forEach((pages, hostname) => {
+      if (pages.length > 1) {
+        items.push({
+          id: crypto.randomUUID(),
+          type: "domain",
+          name: hostname,
+          status: "completed",
+          scrapedPages: pages
+        });
+      } else {
+        items.push({
+          id: pages[0].id,
+          type: "url", 
+          name: pages[0].url,
+          status: "completed",
+          scrapedPages: pages
+        });
+      }
+    });
+
+    setKnowledgeItems(items);
   };
 
-  const handleDisconnectFirecrawl = () => {
-    setFirecrawlApiKey("");
-    setIsFirecrawlConnected(false);
-    
-    toast({
-      title: "Disconnected",
-      description: "Firecrawl API key has been removed.",
-    });
-  };
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -142,16 +115,6 @@ export function KnowledgeBase() {
 
   const handleUrlAdd = async () => {
     if (!newUrl) return;
-    
-    if (!isFirecrawlConnected) {
-      toast({
-        title: "Firecrawl Required",
-        description: "Please configure your Firecrawl API key to scrape URLs.",
-        variant: "destructive"
-      });
-      setShowApiDialog(true);
-      return;
-    }
 
     const newItem: KnowledgeItem = {
       id: crypto.randomUUID(),
@@ -165,18 +128,10 @@ export function KnowledgeBase() {
     setNewUrl("");
     
     try {
-      const result = await FirecrawlService.scrapeUrl(currentUrl);
+      const result = await CrawlerService.scrapeUrl(currentUrl);
       
-      if (result.success && result.data) {
-        setKnowledgeItems(prev => 
-          prev.map(item => 
-            item.id === newItem.id ? { 
-              ...item, 
-              status: "completed",
-              crawledData: [result.data!]
-            } : item
-          )
-        );
+      if (result.success) {
+        await loadScrapedPages();
         toast({
           title: "URL scraped successfully",
           description: `Content from ${currentUrl} has been added to your knowledge base.`,
@@ -209,16 +164,6 @@ export function KnowledgeBase() {
 
   const handleDomainAdd = async () => {
     if (!newDomain) return;
-    
-    if (!isFirecrawlConnected) {
-      toast({
-        title: "Firecrawl Required",
-        description: "Please configure your Firecrawl API key to crawl domains.",
-        variant: "destructive"
-      });
-      setShowApiDialog(true);
-      return;
-    }
 
     const domainUrl = newDomain.startsWith('http') ? newDomain : `https://${newDomain}`;
     
@@ -234,21 +179,13 @@ export function KnowledgeBase() {
     setNewDomain("");
     
     try {
-      const result = await FirecrawlService.crawlDomain(domainUrl);
+      const result = await CrawlerService.crawlDomain(domainUrl, maxPages);
       
-      if (result.success && result.data && result.data.length > 0) {
-        setKnowledgeItems(prev => 
-          prev.map(item => 
-            item.id === newItem.id ? { 
-              ...item, 
-              status: "completed",
-              crawledData: result.data
-            } : item
-          )
-        );
+      if (result.success) {
+        await loadScrapedPages();
         toast({
           title: "Domain crawled successfully",
-          description: `Found ${result.data.length} pages from ${currentDomain} and added to your knowledge base.`,
+          description: `Found ${result.totalPages || 0} pages from ${currentDomain} and added to your knowledge base.`,
         });
       } else {
         setKnowledgeItems(prev => 
@@ -276,16 +213,16 @@ export function KnowledgeBase() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const item = knowledgeItems.find(i => i.id === id);
-    if (item?.crawledData) {
-      // Remove crawled data from storage
-      item.crawledData.forEach(data => {
-        FirecrawlService.removeCrawledContent(data.url);
-      });
+    if (item?.scrapedPages) {
+      // Remove scraped pages from database
+      for (const page of item.scrapedPages) {
+        await CrawlerService.deleteScrapedPage(page.url);
+      }
     }
     
-    setKnowledgeItems(prev => prev.filter(item => item.id !== id));
+    await loadScrapedPages();
     toast({
       title: "Item removed",
       description: "The knowledge source has been removed from your database.",
@@ -319,7 +256,7 @@ export function KnowledgeBase() {
     }
   };
 
-  const totalCrawledPages = FirecrawlService.getCrawledData().length;
+  const totalCrawledPages = scrapedPages.length;
 
   return (
     <div className="p-6 space-y-6">
@@ -331,58 +268,10 @@ export function KnowledgeBase() {
           </p>
         </div>
         
-        {/* Firecrawl API Key Setup */}
-        <Dialog open={showApiDialog} onOpenChange={setShowApiDialog}>
-          <DialogTrigger asChild>
-            <Button variant={isFirecrawlConnected ? "outline" : "default"}>
-              <Key className="h-4 w-4 mr-2" />
-              {isFirecrawlConnected ? "Firecrawl Connected" : "Setup Firecrawl"}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Configure Firecrawl API Key</DialogTitle>
-              <DialogDescription>
-                Enter your Firecrawl API key to enable website crawling functionality.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                For production apps, consider connecting to Supabase for secure secret management. 
-                Your API key will be stored in your browser's local storage.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="firecrawl-key">Firecrawl API Key</Label>
-                <Input
-                  id="firecrawl-key"
-                  type="password"
-                  placeholder="fc-..."
-                  value={tempApiKey}
-                  onChange={(e) => setTempApiKey(e.target.value)}
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Get your API key from <a href="https://firecrawl.dev" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">firecrawl.dev</a>
-                </p>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button onClick={handleSaveFirecrawlApiKey} className="flex-1">
-                  Save API Key
-                </Button>
-                {isFirecrawlConnected && (
-                  <Button onClick={handleDisconnectFirecrawl} variant="destructive">
-                    Disconnect
-                  </Button>
-                )}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          <Globe className="h-4 w-4 mr-2" />
+          Custom Crawler Powered by Supabase
+        </Badge>
       </div>
 
       {/* Stats Summary */}
@@ -438,7 +327,7 @@ export function KnowledgeBase() {
               Add URLs
             </CardTitle>
             <CardDescription>
-              Scrape specific web pages with Firecrawl.
+              Scrape specific web pages with our custom crawler.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -450,22 +339,16 @@ export function KnowledgeBase() {
                 value={newUrl}
                 onChange={(e) => setNewUrl(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleUrlAdd()}
-                disabled={!isFirecrawlConnected}
               />
             </div>
             <Button 
               onClick={handleUrlAdd} 
-              disabled={!newUrl || !isFirecrawlConnected} 
+              disabled={!newUrl} 
               className="w-full"
             >
               <Plus className="h-4 w-4 mr-2" />
               Scrape URL
             </Button>
-            {!isFirecrawlConnected && (
-              <p className="text-xs text-muted-foreground text-center">
-                Firecrawl API key required
-              </p>
-            )}
           </CardContent>
         </Card>
 
@@ -477,7 +360,7 @@ export function KnowledgeBase() {
               Add Domains
             </CardTitle>
             <CardDescription>
-              Crawl entire websites with Firecrawl (up to 50 pages).
+              Crawl entire websites with our custom crawler.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -489,22 +372,27 @@ export function KnowledgeBase() {
                 value={newDomain}
                 onChange={(e) => setNewDomain(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleDomainAdd()}
-                disabled={!isFirecrawlConnected}
               />
             </div>
-            <Button 
-              onClick={handleDomainAdd} 
-              disabled={!newDomain || !isFirecrawlConnected} 
-              className="w-full"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Crawl Domain
-            </Button>
-            {!isFirecrawlConnected && (
-              <p className="text-xs text-muted-foreground text-center">
-                Firecrawl API key required
-              </p>
-            )}
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                placeholder="Pages"
+                value={maxPages}
+                onChange={(e) => setMaxPages(Number(e.target.value))}
+                className="w-20"
+                min="1"
+                max="50"
+              />
+              <Button 
+                onClick={handleDomainAdd} 
+                disabled={!newDomain} 
+                className="flex-1"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Crawl Domain
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -535,8 +423,8 @@ export function KnowledgeBase() {
                           {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                         </span>
                         {item.size && <span className="text-muted-foreground">• {item.size}</span>}
-                        {item.crawledData && item.crawledData.length > 1 && (
-                          <span className="text-muted-foreground">• {item.crawledData.length} pages</span>
+                        {item.scrapedPages && item.scrapedPages.length > 1 && (
+                          <span className="text-muted-foreground">• {item.scrapedPages.length} pages</span>
                         )}
                       </div>
                     </div>

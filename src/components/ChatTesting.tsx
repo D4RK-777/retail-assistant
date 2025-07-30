@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { FirecrawlService } from "@/utils/FirecrawlService";
+import { CrawlerService } from "@/services/CrawlerService";
 
 interface ChatMessage {
   id: string;
@@ -93,8 +93,9 @@ export function ChatTesting() {
     }
 
     // Get crawled data for context
-    const knowledgeContext = FirecrawlService.generateKnowledgeContext();
-    const crawledDataCount = FirecrawlService.getCrawledData().length;
+    const pages = await CrawlerService.getScrapedPages();
+    const knowledgeContext = CrawlerService.generateKnowledgeContext(pages);
+    const crawledDataCount = pages.length;
 
     const systemPrompt = `You are an AI assistant that has been trained on a knowledge base. The user has uploaded documents, domains, and URLs to train you. ${
       crawledDataCount > 0 
