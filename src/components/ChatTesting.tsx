@@ -29,10 +29,10 @@ export function ChatTesting() {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useState("AIzaSyAXCL8GnTnVX2ZeSLcumdUjbbcA2Uy-Hu8");
   const [tempApiKey, setTempApiKey] = useState("");
   const [showApiDialog, setShowApiDialog] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
