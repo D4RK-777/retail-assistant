@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { FirecrawlService } from "@/utils/FirecrawlService";
 
 interface ChatMessage {
   id: string;
@@ -91,6 +92,20 @@ export function ChatTesting() {
       throw new Error("No API key provided");
     }
 
+    // Get crawled data for context
+    const knowledgeContext = FirecrawlService.generateKnowledgeContext();
+    const crawledDataCount = FirecrawlService.getCrawledData().length;
+
+    const systemPrompt = `You are an AI assistant that has been trained on a knowledge base. The user has uploaded documents, domains, and URLs to train you. ${
+      crawledDataCount > 0 
+        ? `You have access to ${crawledDataCount} crawled web pages with relevant information.${knowledgeContext}` 
+        : 'Currently no website data has been crawled.'
+    }
+
+Please respond helpfully and knowledgeably to the following question. If the information is available in your knowledge base, reference it specifically. If not, provide a helpful general response and suggest what information might be needed.
+
+User question: ${message}`;
+
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
@@ -100,7 +115,7 @@ export function ChatTesting() {
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `You are an AI assistant that has been trained on a knowledge base. The user has uploaded documents, domains, and URLs to train you. Please respond helpfully and knowledgeably to the following question: ${message}`
+              text: systemPrompt
             }]
           }],
           generationConfig: {
