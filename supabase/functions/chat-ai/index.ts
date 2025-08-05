@@ -20,9 +20,12 @@ serve(async (req) => {
 
     // Get request data
     const { message, context } = await req.json()
+    console.log('Received message:', message)
+    console.log('Received context:', context)
 
     // Get Gemini API key from secrets
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
+    console.log('GEMINI_API_KEY found:', !!geminiApiKey)
     if (!geminiApiKey) {
       console.error('GEMINI_API_KEY not found in environment variables')
       return new Response(
