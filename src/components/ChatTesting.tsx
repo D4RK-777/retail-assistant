@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { CrawlerService } from '@/services/CrawlerService';
 
 // Define the ChatMessage interface
 interface ChatMessage {
@@ -52,10 +53,16 @@ const ChatTesting: React.FC = () => {
 
   const callGeminiAPI = async (message: string): Promise<string> => {
     try {
+      // Get scraped pages for context
+      const scrapedPages = await CrawlerService.getScrapedPages();
+      const context = scrapedPages.length > 0 
+        ? CrawlerService.generateKnowledgeContext(scrapedPages)
+        : 'No specific context available.';
+
       const response = await supabase.functions.invoke('chat-ai', {
         body: {
           message,
-          context: 'No specific context available.'
+          context
         }
       });
 
