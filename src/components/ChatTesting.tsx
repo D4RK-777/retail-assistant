@@ -1,19 +1,18 @@
-// Secure AI Chat Testing Component
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { AlertCircle, Bot, MessageSquare, Send, Settings, Trash2, User } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Send, Settings, Trash2, Bot, User, CheckCircle, XCircle, LogOut } from 'lucide-react';
-import { CrawlerService } from '@/services/CrawlerService';
-import { useAuth } from '@/components/AuthProvider';
+import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 
+// Define the ChatMessage interface
 interface ChatMessage {
   id: string;
   type: 'user' | 'bot';
@@ -21,33 +20,15 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-const ChatTesting = () => {
+const ChatTesting: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [selectedModel, setSelectedModel] = useState('gemini-pro');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/auth');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-    }
-  }, [user, navigate]);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToBottom();
   }, [messages]);
 
   const quickPrompts = [
@@ -58,24 +39,23 @@ const ChatTesting = () => {
     'What is your pricing?'
   ];
 
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      if (scrollAreaRef.current) {
+        const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (scrollElement) {
+          scrollElement.scrollTop = scrollElement.scrollHeight;
+        }
+      }
+    }, 100);
+  };
+
   const callGeminiAPI = async (message: string): Promise<string> => {
     try {
-      // Get the user's auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Please sign in to use the AI chat');
-      }
-
-      // Get context from knowledge base
-      const context = CrawlerService.generateKnowledgeContext(
-        await CrawlerService.getScrapedPages()
-      );
-
       const response = await supabase.functions.invoke('chat-ai', {
         body: {
           message,
-          context,
-          authToken: session.access_token
+          context: 'No specific context available.'
         }
       });
 
@@ -92,11 +72,6 @@ const ChatTesting = () => {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -145,22 +120,17 @@ const ChatTesting = () => {
     }
   };
 
-  if (!user) {
-    return null; // Redirect will happen via useEffect
-  }
-
   return (
     <div className="container mx-auto p-6 h-screen flex flex-col">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">AI Chat Testing</h1>
-          <p className="text-muted-foreground">Test the AI chat functionality with your knowledge base</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={user ? "default" : "secondary"}>
-            {user ? <CheckCircle className="w-4 h-4 mr-1" /> : <XCircle className="w-4 h-4 mr-1" />}
-            {user ? `Signed in as ${user.email}` : 'Not signed in'}
-          </Badge>
+      <Card className="flex-1 flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="w-6 h-6 text-primary" />
+            <div>
+              <h3 className="text-lg font-semibold">AI Assistant</h3>
+              <p className="text-sm text-muted-foreground">Ask me anything!</p>
+            </div>
+          </div>
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
@@ -168,13 +138,16 @@ const ChatTesting = () => {
                 Settings
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Chat Settings</DialogTitle>
+                <DialogDescription>
+                  Customize your AI chat experience
+                </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="model-select">AI Model</Label>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-3">
+                  <h4 className="font-medium">Model Selection</h4>
                   <Select value={selectedModel} onValueChange={setSelectedModel}>
                     <SelectTrigger>
                       <SelectValue />
@@ -188,22 +161,9 @@ const ChatTesting = () => {
                 
                 <Separator />
                 
-                <div>
-                  <Label>User Account</Label>
-                  <div className="flex items-center justify-between mt-2 p-3 border rounded-md">
-                    <span className="text-sm">{user?.email || 'Not signed in'}</span>
-                    <Button onClick={handleSignOut} variant="outline" size="sm">
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
-                    </Button>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <Label className="text-sm font-medium">Quick Test Prompts</Label>
-                  <div className="grid gap-2 mt-2">
+                <div className="space-y-3">
+                  <h4 className="font-medium">Quick Test Prompts</h4>
+                  <div className="grid gap-2">
                     {quickPrompts.map((prompt, index) => (
                       <Button
                         key={index}
@@ -220,104 +180,97 @@ const ChatTesting = () => {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
-
-      <Card className="flex-1 flex flex-col">
-        <CardHeader className="bg-muted/50">
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="w-5 h-5" />
-            AI Assistant
-          </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col p-0">
-          <div className="flex-1 overflow-auto p-4 space-y-4">
-            {messages.length === 0 && (
-              <div className="text-center text-muted-foreground py-8">
-                <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Start a conversation with the AI assistant!</p>
-                <p className="text-sm mt-2">Ask questions about your knowledge base content.</p>
-              </div>
-            )}
-            
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {message.type === 'bot' && (
+
+        <CardContent className="flex-1 p-0">
+          <ScrollArea ref={scrollAreaRef} className="h-full p-4">
+            <div className="space-y-4">
+              {messages.length === 0 && (
+                <div className="text-center text-muted-foreground py-8">
+                  <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Start a conversation with the AI assistant!</p>
+                  <p className="text-sm mt-2">Ask questions and get intelligent responses.</p>
+                </div>
+              )}
+              
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {message.type === 'bot' && (
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                      <Bot className="w-4 h-4 text-primary-foreground" />
+                    </div>
+                  )}
+                  
+                  <div className={`max-w-[70%] ${message.type === 'user' ? 'order-1' : ''}`}>
+                    <div
+                      className={`rounded-lg p-3 ${
+                        message.type === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 px-1">
+                      {message.timestamp.toLocaleTimeString()}
+                    </p>
+                  </div>
+                  
+                  {message.type === 'user' && (
+                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 order-2">
+                      <User className="w-4 h-4 text-secondary-foreground" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {isTyping && (
+                <div className="flex gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                     <Bot className="w-4 h-4 text-primary-foreground" />
                   </div>
-                )}
-                
-                <div className={`max-w-[70%] ${message.type === 'user' ? 'order-1' : ''}`}>
-                  <div
-                    className={`rounded-lg p-3 ${
-                      message.type === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 px-1">
-                    {message.timestamp.toLocaleTimeString()}
-                  </p>
-                </div>
-                
-                {message.type === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 order-2">
-                    <User className="w-4 h-4 text-secondary-foreground" />
-                  </div>
-                )}
-              </div>
-            ))}
-            
-            {isTyping && (
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <div className="bg-muted rounded-lg p-3">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="bg-muted rounded-lg p-3">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
-          
-          <div className="border-t p-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Type your message..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="flex-1"
-              />
-              <Button 
-                onClick={handleSendMessage} 
-                disabled={!inputValue.trim() || isTyping}
-                size="sm"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-              <Button 
-                onClick={clearChat} 
-                variant="outline" 
-                size="sm"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              )}
             </div>
-          </div>
+          </ScrollArea>
         </CardContent>
+
+        <CardFooter className="p-4 border-t">
+          <div className="flex w-full gap-2">
+            <Input
+              placeholder="Type your message..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="flex-1"
+            />
+            <Button 
+              onClick={handleSendMessage} 
+              disabled={!inputValue.trim() || isTyping}
+              size="sm"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+            <Button 
+              onClick={clearChat} 
+              variant="outline" 
+              size="sm"
+              disabled={messages.length === 0}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );
