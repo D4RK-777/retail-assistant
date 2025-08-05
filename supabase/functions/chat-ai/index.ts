@@ -41,7 +41,7 @@ serve(async (req) => {
     const prompt = `${context}\n\nUser question: ${message}\n\nPlease provide a helpful response based on the provided context.`
 
     // Call Gemini API
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
