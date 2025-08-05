@@ -1,165 +1,90 @@
-import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, RotateCcw, Settings, Key, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
-import { CrawlerService } from "@/services/CrawlerService";
+import React, { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import { Send, Settings, Trash2, Bot, User, CheckCircle, XCircle, LogOut } from 'lucide-react';
+import { CrawlerService } from '@/services/CrawlerService';
+import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatMessage {
   id: string;
-  type: "user" | "bot";
+  type: 'user' | 'bot';
   content: string;
   timestamp: Date;
 }
 
-export function ChatTesting() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      type: "bot",
-      content: "Hello! I'm your AI assistant powered by Gemini 2.5 Flash. I've been trained on your knowledge base and I'm ready to help. Ask me anything!",
-      timestamp: new Date()
-    }
-  ]);
-  const [inputValue, setInputValue] = useState("");
+const ChatTesting = () => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
-  const [apiKey, setApiKey] = useState("AIzaSyAXCL8GnTnVX2ZeSLcumdUjbbcA2Uy-Hu8");
-  const [tempApiKey, setTempApiKey] = useState("");
-  const [showApiDialog, setShowApiDialog] = useState(false);
-  const [isConnected, setIsConnected] = useState(true);
+  const [selectedModel, setSelectedModel] = useState('gemini-pro');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
+  // Redirect to auth if not logged in
   useEffect(() => {
-    scrollToBottom();
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => {
-    // Check if API key exists in localStorage
-    const savedApiKey = localStorage.getItem('gemini_api_key');
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-      setIsConnected(true);
-    }
-  }, []);
-
-  const handleSaveApiKey = () => {
-    if (!tempApiKey.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid API key.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    localStorage.setItem('gemini_api_key', tempApiKey);
-    setApiKey(tempApiKey);
-    setIsConnected(true);
-    setShowApiDialog(false);
-    setTempApiKey("");
-    
-    toast({
-      title: "API Key Saved",
-      description: "Gemini API key has been saved securely in your browser.",
-    });
-  };
-
-  const handleDisconnect = () => {
-    localStorage.removeItem('gemini_api_key');
-    setApiKey("");
-    setIsConnected(false);
-    
-    toast({
-      title: "Disconnected",
-      description: "API key has been removed from your browser.",
-    });
-  };
+  const quickPrompts = [
+    'What services do you offer?',
+    'How can I get support?',
+    'What are your main features?',
+    'Tell me about your company',
+    'What is your pricing?'
+  ];
 
   const callGeminiAPI = async (message: string): Promise<string> => {
-    if (!apiKey) {
-      throw new Error("No API key provided");
-    }
-
-    // Get crawled data for context
-    const pages = await CrawlerService.getScrapedPages();
-    const knowledgeContext = CrawlerService.generateKnowledgeContext(pages);
-    const crawledDataCount = pages.length;
-
-    const systemPrompt = `You are an AI assistant that has been trained on a knowledge base. The user has uploaded documents, domains, and URLs to train you. ${
-      crawledDataCount > 0 
-        ? `You have access to ${crawledDataCount} crawled web pages with relevant information.${knowledgeContext}` 
-        : 'Currently no website data has been crawled.'
-    }
-
-Please respond helpfully and knowledgeably to the following question. If the information is available in your knowledge base, reference it specifically. If not, provide a helpful general response and suggest what information might be needed.
-
-User question: ${message}`;
-
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: systemPrompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            }
-          ]
-        }),
+      // Get the user's auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Please sign in to use the AI chat');
+      }
+
+      // Get context from knowledge base
+      const context = CrawlerService.generateKnowledgeContext(
+        await CrawlerService.getScrapedPages()
+      );
+
+      const response = await supabase.functions.invoke('chat-ai', {
+        body: {
+          message,
+          context,
+          authToken: session.access_token
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`API request failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to get AI response');
       }
 
-      const data = await response.json();
-      
-      if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-        return data.candidates[0].content.parts[0].text;
-      } else {
-        throw new Error("Unexpected response format from Gemini API");
-      }
+      return response.data?.response || 'Sorry, I could not generate a response.';
     } catch (error) {
-      console.error('Gemini API Error:', error);
+      console.error('Error calling AI API:', error);
       throw error;
     }
   };
@@ -167,57 +92,49 @@ User question: ${message}`;
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
-    if (!isConnected) {
-      toast({
-        title: "No API Key",
-        description: "Please configure your Gemini API key first.",
-        variant: "destructive"
-      });
-      setShowApiDialog(true);
+    if (!user) {
+      navigate('/auth');
       return;
     }
 
     const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      type: "user",
+      id: Date.now().toString(),
+      type: 'user',
       content: inputValue,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const currentMessage = inputValue;
-    setInputValue("");
+    setInputValue('');
     setIsTyping(true);
 
     try {
-      const response = await callGeminiAPI(currentMessage);
+      const response = await callGeminiAPI(inputValue);
       
       const botMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        type: "bot",
+        id: (Date.now() + 1).toString(),
+        type: 'bot',
         content: response,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      
+
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       const errorMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        type: "bot",
-        content: `I apologize, but I encountered an error while processing your request: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your API key or try again.`,
-        timestamp: new Date()
+        id: (Date.now() + 1).toString(),
+        type: 'bot',
+        content: `Error: ${error instanceof Error ? error.message : 'Something went wrong'}`,
+        timestamp: new Date(),
       };
-      
+
       setMessages(prev => [...prev, errorMessage]);
-      
-      toast({
-        title: "Error",
-        description: "Failed to get response from Gemini. Please check your API key.",
-        variant: "destructive"
-      });
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const clearChat = () => {
+    setMessages([]);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -227,275 +144,182 @@ User question: ${message}`;
     }
   };
 
-  const clearChat = () => {
-    setMessages([
-      {
-        id: "1",
-        type: "bot",
-        content: "Hello! I'm your AI assistant powered by Gemini 2.5 Flash. I've been trained on your knowledge base and I'm ready to help. Ask me anything!",
-        timestamp: new Date()
-      }
-    ]);
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const testQuestions = [
-    "What services do you offer?",
-    "How can I contact support?",
-    "What are your pricing plans?",
-    "Tell me about your company",
-    "What features do you provide?"
-  ];
+  if (!user) {
+    return null; // Redirect will happen via useEffect
+  }
 
   return (
-    <div className="p-6 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
+    <div className="container mx-auto p-6 h-screen flex flex-col">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold">Chat Testing Environment</h2>
-          <p className="text-muted-foreground">
-            Test your AI's responses powered by Gemini 2.5 Flash.
-          </p>
+          <h1 className="text-2xl font-bold">AI Chat Testing</h1>
+          <p className="text-muted-foreground">Test the AI chat functionality with your knowledge base</p>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <Select value={selectedModel} onValueChange={setSelectedModel}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-              <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Dialog open={showApiDialog} onOpenChange={setShowApiDialog}>
+        <div className="flex items-center gap-2">
+          <Badge variant={user ? "default" : "secondary"}>
+            {user ? <CheckCircle className="w-4 h-4 mr-1" /> : <XCircle className="w-4 h-4 mr-1" />}
+            {user ? `Signed in as ${user.email}` : 'Not signed in'}
+          </Badge>
+          <Dialog>
             <DialogTrigger asChild>
-              <Button variant={isConnected ? "outline" : "default"}>
-                <Key className="h-4 w-4 mr-2" />
-                {isConnected ? "Connected" : "Setup API"}
+              <Button variant="outline" size="sm">
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Configure Gemini API Key</DialogTitle>
-                <DialogDescription>
-                  Enter your Google Gemini API key to enable AI functionality.
-                </DialogDescription>
+                <DialogTitle>Chat Settings</DialogTitle>
               </DialogHeader>
-              
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  Your API key will be stored securely in your browser's local storage. For production applications, consider using Supabase for secure secret management.
-                </AlertDescription>
-              </Alert>
-
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="api-key">Gemini API Key</Label>
-                  <Input
-                    id="api-key"
-                    type="password"
-                    placeholder="AIzaSy..."
-                    value={tempApiKey}
-                    onChange={(e) => setTempApiKey(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Get your API key from Google AI Studio
-                  </p>
+                  <Label htmlFor="model-select">AI Model</Label>
+                  <Select value={selectedModel} onValueChange={setSelectedModel}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
+                      <SelectItem value="gemini-pro-vision">Gemini Pro Vision</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button onClick={handleSaveApiKey} className="flex-1">
-                    Save API Key
-                  </Button>
-                  {isConnected && (
-                    <Button onClick={handleDisconnect} variant="destructive">
-                      Disconnect
+                <Separator />
+                
+                <div>
+                  <Label>User Account</Label>
+                  <div className="flex items-center justify-between mt-2 p-3 border rounded-md">
+                    <span className="text-sm">{user?.email || 'Not signed in'}</span>
+                    <Button onClick={handleSignOut} variant="outline" size="sm">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
                     </Button>
-                  )}
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <Label className="text-sm font-medium">Quick Test Prompts</Label>
+                  <div className="grid gap-2 mt-2">
+                    {quickPrompts.map((prompt, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setInputValue(prompt)}
+                        className="text-left justify-start h-auto p-3"
+                      >
+                        {prompt}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
-          
-          <Button variant="outline" onClick={clearChat}>
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Clear Chat
-          </Button>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-4 flex-1">
-        {/* Chat Interface */}
-        <Card className="lg:col-span-3 shadow-card flex flex-col">
-          <CardHeader className="border-b">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-gradient-primary rounded-full">
-                  <Bot className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">AI Assistant</CardTitle>
-                  <CardDescription>Powered by {selectedModel} • Testing Mode</CardDescription>
-                </div>
+      <Card className="flex-1 flex flex-col">
+        <CardHeader className="bg-muted/50">
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="w-5 h-5" />
+            AI Assistant
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col p-0">
+          <div className="flex-1 overflow-auto p-4 space-y-4">
+            {messages.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">
+                <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Start a conversation with the AI assistant!</p>
+                <p className="text-sm mt-2">Ask questions about your knowledge base content.</p>
               </div>
-              <Badge className={isConnected ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}>
-                {isConnected ? "Connected" : "Disconnected"}
-              </Badge>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="flex-1 flex flex-col p-0">
-            {/* Messages */}
-            <div className="flex-1 overflow-auto p-4 space-y-4 max-h-96">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {message.type === 'bot' && (
-                    <div className="p-2 bg-gradient-primary rounded-full self-start">
-                      <Bot className="h-4 w-4 text-white" />
-                    </div>
-                  )}
-                  
-                  <div className={`max-w-xs lg:max-w-md space-y-1 ${message.type === 'user' ? 'order-1' : ''}`}>
-                    <div
-                      className={`p-3 rounded-lg ${
-                        message.type === 'user'
-                          ? 'bg-primary text-primary-foreground ml-auto'
-                          : 'bg-muted'
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground px-1">
-                      {formatTime(message.timestamp)}
-                    </p>
-                  </div>
-                  
-                  {message.type === 'user' && (
-                    <div className="p-2 bg-primary rounded-full self-start order-2">
-                      <User className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                  )}
-                </div>
-              ))}
-              
-              {isTyping && (
-                <div className="flex gap-3">
-                  <div className="p-2 bg-gradient-primary rounded-full">
-                    <Bot className="h-4 w-4 text-white" />
-                  </div>
-                  <div className="bg-muted p-3 rounded-lg max-w-xs">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+            )}
             
-            {/* Input */}
-            <div className="border-t p-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder={isConnected ? "Type your message..." : "Please configure your API key first..."}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="flex-1"
-                  disabled={!isConnected}
-                />
-                <Button onClick={handleSendMessage} disabled={!inputValue.trim() || isTyping || !isConnected}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Testing Controls */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-primary" />
-              Testing Controls
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h4 className="font-medium mb-2">Connection Status</h4>
-              <div className="space-y-2">
-                <Badge className={`w-full justify-center ${isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {isConnected ? 'Gemini Connected' : 'Not Connected'}
-                </Badge>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-medium mb-2">Model Information</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Model:</span>
-                  <span>Gemini 2.5 Flash</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Provider:</span>
-                  <span>Google AI</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Max Tokens:</span>
-                  <span>1024</span>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-medium mb-2">Quick Tests</h4>
-              <div className="space-y-2">
-                {testQuestions.map((question, index) => (
-                  <Button 
-                    key={index}
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full text-left justify-start h-auto py-2 px-3"
-                    onClick={() => setInputValue(question)}
-                    disabled={!isConnected}
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                {message.type === 'bot' && (
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-4 h-4 text-primary-foreground" />
+                  </div>
+                )}
+                
+                <div className={`max-w-[70%] ${message.type === 'user' ? 'order-1' : ''}`}>
+                  <div
+                    className={`rounded-lg p-3 ${
+                      message.type === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    }`}
                   >
-                    <span className="truncate">{question}</span>
-                  </Button>
-                ))}
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 px-1">
+                    {message.timestamp.toLocaleTimeString()}
+                  </p>
+                </div>
+                
+                {message.type === 'user' && (
+                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 order-2">
+                    <User className="w-4 h-4 text-secondary-foreground" />
+                  </div>
+                )}
               </div>
-            </div>
+            ))}
             
-            <div>
-              <h4 className="font-medium mb-2">Performance Metrics</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Temperature:</span>
-                  <span>0.7</span>
+            {isTyping && (
+              <div className="flex gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Top-K:</span>
-                  <span>40</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Top-P:</span>
-                  <span>0.95</span>
+                <div className="bg-muted rounded-lg p-3">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
                 </div>
               </div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
+          
+          <div className="border-t p-4">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Type your message..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="flex-1"
+              />
+              <Button 
+                onClick={handleSendMessage} 
+                disabled={!inputValue.trim() || isTyping}
+                size="sm"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+              <Button 
+                onClick={clearChat} 
+                variant="outline" 
+                size="sm"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
-}
+};
+
+export default ChatTesting;

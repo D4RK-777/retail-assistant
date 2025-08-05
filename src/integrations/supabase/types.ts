@@ -723,6 +723,256 @@ export type Database = {
           },
         ]
       }
+      smart_endpoint_analytics: {
+        Row: {
+          avg_session_duration: unknown | null
+          bounce_rate: number | null
+          conversion_rate: number | null
+          created_at: string | null
+          date: string
+          id: number
+          smart_endpoint_id: number
+          total_clicks: number | null
+          total_scans: number | null
+          unique_visitors: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_session_duration?: unknown | null
+          bounce_rate?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          date: string
+          id?: number
+          smart_endpoint_id: number
+          total_clicks?: number | null
+          total_scans?: number | null
+          unique_visitors?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_session_duration?: unknown | null
+          bounce_rate?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          date?: string
+          id?: number
+          smart_endpoint_id?: number
+          total_clicks?: number | null
+          total_scans?: number | null
+          unique_visitors?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_endpoint_analytics_smart_endpoint_id_fkey"
+            columns: ["smart_endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "smart_endpoints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_endpoint_visits: {
+        Row: {
+          access_method: string
+          city: string | null
+          conversion_event: string | null
+          country_code: string | null
+          custom_parameters: Json | null
+          device_category: string | null
+          fingerprint_id: number | null
+          id: number
+          latitude: number | null
+          longitude: number | null
+          referrer: string | null
+          region: string | null
+          session_id: string | null
+          smart_endpoint_id: number
+          test_variant: string | null
+          timestamp: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          viewport_height: number | null
+          viewport_width: number | null
+          visit_id: number | null
+        }
+        Insert: {
+          access_method?: string
+          city?: string | null
+          conversion_event?: string | null
+          country_code?: string | null
+          custom_parameters?: Json | null
+          device_category?: string | null
+          fingerprint_id?: number | null
+          id?: number
+          latitude?: number | null
+          longitude?: number | null
+          referrer?: string | null
+          region?: string | null
+          session_id?: string | null
+          smart_endpoint_id: number
+          test_variant?: string | null
+          timestamp?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          viewport_height?: number | null
+          viewport_width?: number | null
+          visit_id?: number | null
+        }
+        Update: {
+          access_method?: string
+          city?: string | null
+          conversion_event?: string | null
+          country_code?: string | null
+          custom_parameters?: Json | null
+          device_category?: string | null
+          fingerprint_id?: number | null
+          id?: number
+          latitude?: number | null
+          longitude?: number | null
+          referrer?: string | null
+          region?: string | null
+          session_id?: string | null
+          smart_endpoint_id?: number
+          test_variant?: string | null
+          timestamp?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          viewport_height?: number | null
+          viewport_width?: number | null
+          visit_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_endpoint_visits_fingerprint_id_fkey"
+            columns: ["fingerprint_id"]
+            isOneToOne: false
+            referencedRelation: "fingerprints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_endpoint_visits_smart_endpoint_id_fkey"
+            columns: ["smart_endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "smart_endpoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_endpoint_visits_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_endpoints: {
+        Row: {
+          click_limit: number | null
+          created_at: string | null
+          criteria: Json
+          current_clicks: number | null
+          id: number
+          priority: number | null
+          smart_url_id: number
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          click_limit?: number | null
+          created_at?: string | null
+          criteria?: Json
+          current_clicks?: number | null
+          id?: number
+          priority?: number | null
+          smart_url_id: number
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          click_limit?: number | null
+          created_at?: string | null
+          criteria?: Json
+          current_clicks?: number | null
+          id?: number
+          priority?: number | null
+          smart_url_id?: number
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_endpoints_smart_url_id_fkey"
+            columns: ["smart_url_id"]
+            isOneToOne: false
+            referencedRelation: "smart_urls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_urls: {
+        Row: {
+          config: Json
+          created_at: string | null
+          id: number
+          name: string
+          short_url_id: number
+          split_type: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          config?: Json
+          created_at?: string | null
+          id?: number
+          name: string
+          short_url_id: number
+          split_type: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          id?: number
+          name?: string
+          short_url_id?: number
+          split_type?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_urls_short_url_id_fkey"
+            columns: ["short_url_id"]
+            isOneToOne: true
+            referencedRelation: "urls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       template_events: {
         Row: {
           created_at: string | null
@@ -842,6 +1092,7 @@ export type Database = {
           id: number
           link_name: string
           slug: string
+          url_type: string | null
           visit_count: number
         }
         Insert: {
@@ -852,6 +1103,7 @@ export type Database = {
           id?: number
           link_name?: string
           slug: string
+          url_type?: string | null
           visit_count?: number
         }
         Update: {
@@ -862,6 +1114,7 @@ export type Database = {
           id?: number
           link_name?: string
           slug?: string
+          url_type?: string | null
           visit_count?: number
         }
         Relationships: []
@@ -1123,6 +1376,19 @@ export type Database = {
           parent_page_id: number
           path: string
           meta: Json
+        }[]
+      }
+      get_smart_url_analytics_summary: {
+        Args: { smart_url_id_param: number }
+        Returns: {
+          endpoint_id: number
+          endpoint_url: string
+          total_visits: number
+          total_clicks: number
+          total_scans: number
+          unique_visitors: number
+          conversion_rate: number
+          last_visit: string
         }[]
       }
       halfvec_avg: {
