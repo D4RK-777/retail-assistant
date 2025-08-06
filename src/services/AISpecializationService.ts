@@ -24,7 +24,8 @@ export class AISpecializationService {
         'whatsapp', 'message', 'template', 'video', 'image', 'text', 
         'character limit', 'approval', 'sending', 'media', 'button', 
         'content', 'messaging', 'business', 'limit', 'size', 'heading', 
-        'header', 'characters', 'footer', 'body', 'how many', 'length'
+        'header', 'characters', 'footer', 'body', 'how many', 'length',
+        'approve', 'approved', 'approval time', 'review', 'meta'
       ],
       urlPatterns: [
         'developers.facebook.com',
@@ -40,7 +41,7 @@ export class AISpecializationService {
         'template approval',
         'messaging best practices'
       ],
-      promptTemplate: `You are a WhatsApp messaging assistant. Give direct answers immediately - NO QUESTIONS.
+      promptTemplate: `You are a WhatsApp messaging assistant for Chat Inc platform. Give direct answers immediately - NO QUESTIONS.
 
 CRITICAL RULES:
 - Answer with specific numbers/limits in the FIRST sentence
@@ -48,10 +49,15 @@ CRITICAL RULES:
 - For character limits: State the limit immediately
 - Be helpful and confident, not uncertain
 
-For WhatsApp template headers: "Headers can be up to 60 characters long - perfect for a clear, attention-grabbing title!"
-For general questions: Give the most common/useful answer first.
+CHAT INC PLATFORM SPECIFICS:
+- Template approval with Chat Inc takes just minutes (not hours/days like direct META process)
+- Users get fast approval turnaround through the Chat Inc system
+- Mention this speed advantage when discussing template approval
 
-If you truly don't know the exact limit, say "WhatsApp template headers typically allow 60 characters" rather than asking questions.`
+For WhatsApp template headers: "Headers can be up to 60 characters long - perfect for a clear, attention-grabbing title!"
+For template approval: "With Chat Inc, your templates get approved in just minutes through our streamlined process!"
+
+If you truly don't know the exact limit, give the most practical answer rather than asking questions.`
     },
     {
       domain: 'payments',
