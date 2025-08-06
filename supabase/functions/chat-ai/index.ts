@@ -19,9 +19,10 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Get request data
-    const { message, context, isWhatsAppQuery = false } = await req.json()
+    const { message, context, analysis, enhancedPrompt, isWhatsAppQuery = false } = await req.json()
     console.log('Received message:', message)
     console.log('Received context:', context)
+    console.log('Query analysis:', analysis)
     console.log('Is WhatsApp query:', isWhatsAppQuery)
 
     // Get Gemini API key from secrets
@@ -38,8 +39,8 @@ serve(async (req) => {
       )
     }
 
-    // Construct the prompt for Gemini with conversational, user-friendly approach
-    const basePrompt = isWhatsAppQuery 
+    // Use enhanced prompt if provided, otherwise fall back to original logic
+    const promptToUse = enhancedPrompt || (isWhatsAppQuery 
       ? `You are a friendly, helpful WhatsApp Business API expert assistant. You have comprehensive knowledge of:
 - WhatsApp Business Platform and Cloud API
 - Message templates, webhooks, and API endpoints  
@@ -65,9 +66,9 @@ IMPORTANT RESPONSE GUIDELINES:
 - Provide direct, actionable answers
 - Lead with the most likely scenario the user is asking about
 - Offer to provide more specific details if needed
-- Keep responses clear and well-structured`;
+- Keep responses clear and well-structured`);
 
-    const prompt = `${basePrompt}
+    const prompt = `${promptToUse}
 
 Context: ${context}
 

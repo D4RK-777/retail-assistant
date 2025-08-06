@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlerService } from '@/services/CrawlerService';
+import { AISpecializationService } from '@/services/AISpecializationService';
 
 // Define the ChatMessage interface
 interface ChatMessage {
@@ -53,35 +54,41 @@ const ChatTesting: React.FC = () => {
 
   const callGeminiAPI = async (message: string): Promise<string> => {
     try {
+      // Analyze the query to determine specialization needed
+      const analysis = AISpecializationService.analyzeQuery(message);
+      console.log('Query Analysis:', analysis);
+      
       // Get scraped pages for context
       const scrapedPages = await CrawlerService.getScrapedPages();
       
-      // Detect if this is a WhatsApp-related query
-      const isWhatsAppQuery = message.toLowerCase().includes('whatsapp') || 
-                             message.toLowerCase().includes('meta') ||
-                             message.toLowerCase().includes('business api') ||
-                             message.toLowerCase().includes('webhook') ||
-                             message.toLowerCase().includes('template');
+      // Filter content based on detected domain
+      const relevantPages = AISpecializationService.filterContentByDomain(scrapedPages, analysis.domain);
       
-      // Filter and prioritize WhatsApp-related content
-      const relevantPages = isWhatsAppQuery 
-        ? scrapedPages.filter(page => 
-            page.url.includes('developers.facebook.com') ||
-            page.content.toLowerCase().includes('whatsapp') ||
-            page.content.toLowerCase().includes('business api') ||
-            page.title?.toLowerCase().includes('whatsapp')
-          )
-        : scrapedPages;
-      
+      // Generate context from relevant pages
       const context = relevantPages.length > 0 
         ? CrawlerService.generateKnowledgeContext(relevantPages)
         : 'No specific context available.';
+
+      // Get specialized configuration
+      const specializationConfig = AISpecializationService.getSpecializationConfig(analysis.domain);
+      
+      // Enhance prompt with context and intent
+      const enhancedPrompt = specializationConfig 
+        ? AISpecializationService.enhancePromptWithContext(
+            specializationConfig.promptTemplate,
+            analysis,
+            relevantPages.length
+          )
+        : '';
 
       const response = await supabase.functions.invoke('chat-ai', {
         body: {
           message,
           context,
-          isWhatsAppQuery
+          analysis,
+          enhancedPrompt,
+          // Keep backward compatibility
+          isWhatsAppQuery: analysis.domain === 'whatsapp'
         }
       });
 
