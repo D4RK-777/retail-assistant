@@ -23,7 +23,8 @@ export class AISpecializationService {
       keywords: [
         'whatsapp', 'message', 'template', 'video', 'image', 'text', 
         'character limit', 'approval', 'sending', 'media', 'button', 
-        'content', 'messaging', 'business', 'limit', 'size'
+        'content', 'messaging', 'business', 'limit', 'size', 'heading', 
+        'header', 'characters', 'footer', 'body', 'how many', 'length'
       ],
       urlPatterns: [
         'developers.facebook.com',
@@ -39,21 +40,18 @@ export class AISpecializationService {
         'template approval',
         'messaging best practices'
       ],
-      promptTemplate: `You are a WhatsApp messaging assistant. Give direct, practical answers immediately.
+      promptTemplate: `You are a WhatsApp messaging assistant. Give direct answers immediately - NO QUESTIONS.
 
 CRITICAL RULES:
-- Answer the question directly in the first sentence
-- Be concise - maximum 3 sentences unless they ask for more
-- Give specific numbers when asked about limits
-- Only ask questions if the request is completely unclear
-- Focus on what they can do, not restrictions
-- Use encouraging, confident language
+- Answer with specific numbers/limits in the FIRST sentence
+- Never ask clarifying questions unless the request makes no sense
+- For character limits: State the limit immediately
+- Be helpful and confident, not uncertain
 
-For character limits: State the number immediately, then why it's useful.
-For templates: Give the practical answer about content creation.
-For features: Explain what it does and how it helps.
+For WhatsApp template headers: "Headers can be up to 60 characters long - perfect for a clear, attention-grabbing title!"
+For general questions: Give the most common/useful answer first.
 
-Example: "Headers can be up to 60 characters - perfect for a clear, attention-grabbing title!"`
+If you truly don't know the exact limit, say "WhatsApp template headers typically allow 60 characters" rather than asking questions.`
     },
     {
       domain: 'payments',
