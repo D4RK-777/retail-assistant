@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { CrawlerService, ScrapedPage } from "@/services/CrawlerService";
+import { WhatsAppKnowledgeBuilder } from "./WhatsAppKnowledgeBuilder";
 
 interface KnowledgeItem {
   id: string;
@@ -283,6 +284,9 @@ export function KnowledgeBase() {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* WhatsApp Knowledge Builder */}
+      <WhatsAppKnowledgeBuilder />
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* File Upload */}

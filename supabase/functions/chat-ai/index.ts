@@ -19,9 +19,10 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Get request data
-    const { message, context } = await req.json()
+    const { message, context, isWhatsAppQuery = false } = await req.json()
     console.log('Received message:', message)
     console.log('Received context:', context)
+    console.log('Is WhatsApp query:', isWhatsAppQuery)
 
     // Get Gemini API key from secrets
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
@@ -37,8 +38,25 @@ serve(async (req) => {
       )
     }
 
-    // Prepare the prompt with context
-    const prompt = `${context}\n\nUser question: ${message}\n\nPlease provide a helpful response based on the provided context.`
+    // Construct the prompt for Gemini with WhatsApp expertise
+    const basePrompt = isWhatsAppQuery 
+      ? `You are an absolute expert on the WhatsApp Business API and Meta's developer platform. You have comprehensive knowledge of:
+- WhatsApp Business Platform and Cloud API
+- Message templates, webhooks, and API endpoints  
+- Business Management API and authentication
+- Rate limiting, best practices, and compliance
+- All Meta developer documentation and guidelines
+
+Provide detailed, technical responses with code examples when relevant. Reference specific API endpoints, parameters, and response formats.`
+      : `You are an expert AI assistant with access to a knowledge base.`;
+
+    const prompt = `${basePrompt}
+
+Context: ${context}
+
+User Question: ${message}
+
+Please provide a helpful, accurate response based on the context provided. If the context doesn't contain relevant information for WhatsApp queries, use your extensive knowledge of the WhatsApp Business API platform.`;
 
     // Call Gemini API
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {

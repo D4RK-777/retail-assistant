@@ -55,14 +55,33 @@ const ChatTesting: React.FC = () => {
     try {
       // Get scraped pages for context
       const scrapedPages = await CrawlerService.getScrapedPages();
-      const context = scrapedPages.length > 0 
-        ? CrawlerService.generateKnowledgeContext(scrapedPages)
+      
+      // Detect if this is a WhatsApp-related query
+      const isWhatsAppQuery = message.toLowerCase().includes('whatsapp') || 
+                             message.toLowerCase().includes('meta') ||
+                             message.toLowerCase().includes('business api') ||
+                             message.toLowerCase().includes('webhook') ||
+                             message.toLowerCase().includes('template');
+      
+      // Filter and prioritize WhatsApp-related content
+      const relevantPages = isWhatsAppQuery 
+        ? scrapedPages.filter(page => 
+            page.url.includes('developers.facebook.com') ||
+            page.content.toLowerCase().includes('whatsapp') ||
+            page.content.toLowerCase().includes('business api') ||
+            page.title?.toLowerCase().includes('whatsapp')
+          )
+        : scrapedPages;
+      
+      const context = relevantPages.length > 0 
+        ? CrawlerService.generateKnowledgeContext(relevantPages)
         : 'No specific context available.';
 
       const response = await supabase.functions.invoke('chat-ai', {
         body: {
           message,
-          context
+          context,
+          isWhatsAppQuery
         }
       });
 
