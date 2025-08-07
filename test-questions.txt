@@ -1,82 +1,85 @@
-flEX Platform AI Test Questions - 50 Sample User Inquiries
+flEX Platform User Questions - 50 Sample Inquiries for AI Assistant
 ================================================================
 
-PLATFORM NAVIGATION & SETUP
+WHATSAPP BUSINESS API BASICS
 ----------------------------
-1. How do I get started with flEX platform?
-2. What's the difference between the Knowledge, Training, and Testing tabs?
-3. How do I set up my flEX account for the first time?
-4. Where can I find my API keys and credentials?
-5. How do I navigate between different sections of the platform?
-6. What are the minimum requirements to use flEX?
+1. How do I get started with WhatsApp Business API?
+2. What's the difference between WhatsApp Business App and WhatsApp Business API?
+3. How do I verify my business on WhatsApp?
+4. What are the requirements to use WhatsApp Business API?
+5. How much does WhatsApp Business API cost?
+6. Can I use my existing phone number for WhatsApp Business API?
 
-AI TRAINING & KNOWLEDGE BASE
-----------------------------
-7. How do I train my AI assistant with my business data?
-8. What's the difference between full training and incremental training?
-9. How long does AI training typically take?
-10. Can I see the progress of my AI training session?
-11. How do I add new content to my knowledge base?
-12. What file formats can I upload to train my AI?
-13. How do I delete or update existing training data?
-14. Can I train my AI with website content?
-15. How often should I retrain my AI assistant?
-16. What happens if my training session fails?
+WHATSAPP BUSINESS ACCOUNT SETUP
+-------------------------------
+7. How do I create a WhatsApp Business Account?
+8. What documents do I need for WhatsApp Business verification?
+9. How long does WhatsApp Business verification take?
+10. How do I set up my business profile on WhatsApp?
+11. Can I have multiple WhatsApp Business accounts?
+12. How do I migrate from WhatsApp Business App to API?
 
-WHATSAPP BUSINESS INTEGRATION
------------------------------
-17. How do I connect my WhatsApp Business account to flEX?
-18. How do I set up WhatsApp webhook endpoints?
-19. What are WhatsApp message templates and how do I create them?
-20. How do I handle WhatsApp message delivery status?
-21. Can I send bulk messages through WhatsApp Business API?
-22. How do I manage WhatsApp contact lists?
-23. What are the WhatsApp Business API rate limits?
+MESSAGE TEMPLATES & SENDING
+---------------------------
+13. What are WhatsApp message templates and why do I need them?
+14. How do I create and submit message templates?
+15. What are the WhatsApp message template guidelines?
+16. How long does template approval take?
+17. Can I send messages without templates?
+18. What's the 24-hour messaging window rule?
+19. How do I send bulk messages on WhatsApp Business?
+20. Can I send media files through WhatsApp Business API?
+
+WHATSAPP WEBHOOKS & INTEGRATION
+-------------------------------
+21. What are webhooks and how do they work with WhatsApp?
+22. How do I set up webhooks for my WhatsApp Business account?
+23. What webhook events can I receive from WhatsApp?
 24. How do I handle incoming WhatsApp messages automatically?
-25. Can I create interactive WhatsApp messages with buttons?
-26. How do I get WhatsApp Business API approval?
-27. What's the difference between WhatsApp Business App and API?
+25. Can I integrate WhatsApp with my CRM system?
+26. How do I track message delivery status?
 
-CONTENT MANAGEMENT
-------------------
-28. How do I scrape content from a specific URL?
-29. Can I crawl an entire website domain for training data?
-30. How do I manage my scraped website content?
-31. What types of content can I upload to my knowledge base?
-32. How do I organize my training content effectively?
-33. Can I delete specific scraped pages?
-34. How do I search through my existing content?
-35. What's the maximum amount of content I can upload?
+INTERACTIVE MESSAGES & FEATURES
+-------------------------------
+27. How do I create interactive buttons in WhatsApp messages?
+28. What are WhatsApp list messages and how do I use them?
+29. Can I create quick reply buttons in WhatsApp?
+30. How do I use WhatsApp flows for complex interactions?
+31. Can I send location messages through WhatsApp Business API?
+32. How do I create catalog messages for products?
 
-CHAT & AI INTERACTION
----------------------
-36. How do I test my AI assistant before deploying it?
-37. Can I customize my AI assistant's personality and responses?
-38. How do I improve my AI's response accuracy?
-39. What should I do if my AI gives incorrect answers?
-40. Can my AI handle multiple languages?
-41. How do I make my AI more specialized for my industry?
-42. Can I see conversation logs and analytics?
+COMPLIANCE & BEST PRACTICES
+---------------------------
+33. What are WhatsApp's messaging policies and compliance rules?
+34. How can I avoid getting my WhatsApp Business account banned?
+35. What is the WhatsApp Business API rate limit?
+36. How do I handle opt-ins and opt-outs for WhatsApp marketing?
+37. What are the guidelines for WhatsApp Business naming?
+38. How do I report spam or abuse on WhatsApp Business?
+
+PRICING & BILLING
+-----------------
+39. How is WhatsApp Business API pricing calculated?
+40. What are conversation-based pricing rates?
+41. Do I get charged for failed messages?
+42. How do I track my WhatsApp Business API usage and costs?
+43. What's the difference between user-initiated and business-initiated conversations?
+44. Are there any free message allowances?
 
 TROUBLESHOOTING & SUPPORT
---------------------------
-43. Why is my AI training session stuck or taking too long?
-44. My API calls are failing - how do I debug this?
-45. The content scraper isn't working properly - what should I check?
-46. How do I report bugs or get technical support?
-47. My AI responses seem irrelevant - how do I fix this?
-
-ADVANCED FEATURES
------------------
-48. Can I integrate flEX with my existing CRM system?
-49. How do I use flEX API in my own applications?
-50. Can I set up automated workflows with flEX?
+-------------------------
+45. Why are my WhatsApp messages not being delivered?
+46. My WhatsApp Business account was restricted - what do I do?
+47. How do I appeal a rejected message template?
+48. Why am I getting webhook delivery failures?
+49. How do I contact WhatsApp Business support?
+50. My phone number verification failed - how do I fix this?
 
 ================================================================
 Notes for Testing:
-- These questions cover the full spectrum of user inquiries
-- Questions range from beginner to advanced technical topics
-- Each category represents key platform functionality
-- Use these to test LEXI's knowledge and response quality
-- Verify responses match actual platform capabilities
+- These questions represent real flEX platform user inquiries
+- Focus on WhatsApp Business API and Meta platform functionality
+- Questions range from beginner setup to advanced technical issues
+- Use these to test the AI's knowledge of WhatsApp Business API
+- Ensure responses align with current Meta/WhatsApp documentation
 ================================================================
