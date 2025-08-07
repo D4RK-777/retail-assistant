@@ -380,24 +380,30 @@ export function ContentManager() {
               style={{backgroundColor: 'white !important', color: 'black !important', borderColor: '#d1d5db !important'}}
             />
             <div className="flex gap-2">
-              <div className="w-20">
+              <div 
+                className="w-20 h-10 border border-gray-300 rounded-md bg-white flex items-center px-3"
+                style={{
+                  backgroundColor: '#ffffff',
+                  borderColor: '#d1d5db',
+                  color: '#000000'
+                }}
+              >
                 <input
                   type="number"
                   placeholder="Pages"
                   value={maxPages}
                   onChange={(e) => setMaxPages(Number(e.target.value))}
-                  className="flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:cursor-not-allowed disabled:opacity-50"
-                  style={{
-                    backgroundColor: '#ffffff',
-                    color: '#000000',
-                    borderColor: '#d1d5db',
-                    boxShadow: 'none',
-                    outline: 'none',
-                    WebkitBoxShadow: 'none',
-                    WebkitAppearance: 'none'
-                  }}
                   min={1}
                   max={50}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: '#000000',
+                    width: '100%',
+                    fontSize: '14px',
+                    fontFamily: 'inherit'
+                  }}
                 />
               </div>
               <Button onClick={handleDomainAdd} disabled={!newDomain} className="flex-1" size="sm">
