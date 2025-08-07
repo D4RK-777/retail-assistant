@@ -139,18 +139,38 @@ All colors MUST be HSL.
     transition: background-color 5000s ease-in-out 0s !important;
   }
 
-  /* Force any yellow elements to be white */
+  /* NUCLEAR YELLOW OBLITERATION - CONVERT ANY YELLOW TO WHITE */
   *[style*="yellow"],
   *[style*="#ff0"],
   *[style*="#ffc"],
   *[style*="#fed"],
   *[style*="#fde"],
+  *[style*="#f59e0b"],
+  *[style*="#fbbf24"],
+  *[style*="#eab308"],
   .bg-yellow-50,
   .bg-yellow-100,
   .bg-yellow-200,
+  .bg-yellow-300,
+  .bg-yellow-400,
+  .bg-yellow-500,
   .bg-amber-50,
-  .bg-amber-100 {
+  .bg-amber-100,
+  .bg-amber-200,
+  .bg-amber-300,
+  .bg-amber-400,
+  .bg-amber-500,
+  .text-yellow-600,
+  .text-yellow-700,
+  .text-amber-600,
+  .text-amber-700,
+  .border-yellow-200,
+  .border-yellow-300,
+  .border-amber-200,
+  .border-amber-300 {
     background-color: #ffffff !important;
     background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #d1d5db !important;
   }
 }
