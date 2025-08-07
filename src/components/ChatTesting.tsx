@@ -160,7 +160,7 @@ const ChatTesting: React.FC = () => {
           <div className="flex items-center gap-2">
             <Bot className="w-6 h-6 text-primary" />
             <div>
-              <h3 className="text-lg font-semibold">AI Assistant</h3>
+              <h3 className="text-lg font-semibold">LEXI</h3>
               <p className="text-sm text-muted-foreground">Ask me anything!</p>
             </div>
           </div>
@@ -221,7 +221,7 @@ const ChatTesting: React.FC = () => {
               {messages.length === 0 && (
                 <div className="text-center text-muted-foreground py-8">
                   <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Start a conversation with the AI assistant!</p>
+                  <p>Start a conversation with LEXI!</p>
                   <p className="text-sm mt-2">Ask questions and get intelligent responses.</p>
                 </div>
               )}

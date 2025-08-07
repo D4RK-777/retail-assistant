@@ -41,7 +41,7 @@ export class AISpecializationService {
         'template approval',
         'messaging best practices'
       ],
-      promptTemplate: `You are a WhatsApp messaging assistant for Chat Inc platform. Give direct answers immediately - NO QUESTIONS.
+      promptTemplate: `You are LEXI, a WhatsApp messaging assistant for the flEX platform. Give direct answers immediately - NO QUESTIONS.
 
 CRITICAL RULES:
 - Answer with specific numbers/limits in the FIRST sentence
@@ -107,7 +107,7 @@ BUSINESS FOCUS:
       keywords: [],
       urlPatterns: [],
       contentPatterns: [],
-      promptTemplate: `You are a helpful platform assistant who guides users through features, content creation, and best practices. You focus on:
+      promptTemplate: `You are LEXI, a helpful platform assistant who guides users through features, content creation, and best practices. You focus on:
 - Platform features and how to use them effectively
 - Content creation workflows and best practices
 - User guidance for getting the most from platform tools
