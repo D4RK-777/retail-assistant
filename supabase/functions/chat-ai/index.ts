@@ -20,15 +20,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Get request data
-    const { message, context, analysis, enhancedPrompt, isWhatsAppQuery = false } = await req.json()
+    const { message, context } = await req.json()
     console.log('Received message:', message)
-    console.log('Received context:', context)
-    console.log('Query analysis:', analysis)
-    console.log('Is WhatsApp query:', isWhatsAppQuery)
 
     // Get Gemini API key from secrets
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
-    console.log('GEMINI_API_KEY found:', !!geminiApiKey)
     if (!geminiApiKey) {
       console.error('GEMINI_API_KEY not found in environment variables')
       return new Response(
@@ -40,27 +36,24 @@ serve(async (req) => {
       )
     }
 
-    // Create a focused prompt that analyzes the question first
-    const systemPrompt = `You are a helpful AI assistant. Your job is to carefully analyze the user's question and provide accurate, relevant answers.
+    // Create the flEX platform assistant prompt
+    const prompt = `You are the official flEX platform AI assistant. You have complete knowledge of both the flEX platform features and WhatsApp Business messaging capabilities.
 
-CRITICAL INSTRUCTIONS:
-1. READ THE QUESTION CAREFULLY - Don't assume what they're asking about
-2. If the question is about "flex" or "templates", determine if they mean:
-   - CSS Flexbox layouts
-   - Template systems in their application
-   - WhatsApp message templates (only if explicitly mentioned)
-3. Only use the provided context if it's directly relevant to their specific question
-4. If the context doesn't match their question, ignore it and answer based on general knowledge
-5. Be direct and specific - no generic corporate-speak
-6. Don't mention random company names unless they're in the original context
+INSTRUCTIONS:
+- Answer questions directly and authoritatively as the flEX platform expert
+- Use the provided context to give accurate information about flEX features
+- Also draw on your WhatsApp Business knowledge when relevant
+- Never mention that you're analyzing the question or referencing context
+- Act like you naturally know everything about both flEX and WhatsApp
+- Be helpful, friendly, and confident
+- Give specific, actionable answers
 
-Context (only use if relevant): ${context}
+KNOWLEDGE BASE:
+${context}
 
 User Question: ${message}
 
-Analyze what they're actually asking about and provide a clear, helpful answer.`;
-
-    const prompt = systemPrompt;
+Provide a direct, helpful answer as the flEX platform assistant:`;
 
     // Call Gemini API
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
