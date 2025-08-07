@@ -228,8 +228,8 @@ export function AITraining() {
                 <Button 
                   onClick={() => startTraining("incremental")}
                   disabled={selectedSources === 0}
-                  variant="outline" 
-                  className="w-full"
+                  variant="secondary" 
+                  className="w-full bg-background text-foreground border-border hover:bg-muted"
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Update Training
