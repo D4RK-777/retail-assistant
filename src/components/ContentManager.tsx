@@ -352,6 +352,8 @@ export function ContentManager() {
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleUrlAdd()}
+              className="!bg-white !text-black !border-gray-300"
+              style={{backgroundColor: 'white !important', color: 'black !important', borderColor: '#d1d5db !important'}}
             />
             <Button onClick={handleUrlAdd} disabled={!newUrl} className="w-full" size="sm">
               <Plus className="h-4 w-4 mr-2" />
