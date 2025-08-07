@@ -385,7 +385,8 @@ export function ContentManager() {
                 placeholder="Pages"
                 value={maxPages}
                 onChange={(e) => setMaxPages(Number(e.target.value))}
-                className="w-20"
+                className="w-20 !bg-white !text-black !border-gray-300"
+                style={{backgroundColor: 'white !important', color: 'black !important', borderColor: '#d1d5db !important'}}
                 min="1"
                 max="50"
               />
