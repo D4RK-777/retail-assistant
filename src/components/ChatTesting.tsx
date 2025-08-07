@@ -285,7 +285,8 @@ const ChatTesting: React.FC = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="flex-1 bg-background border-border"
+              className="flex-1 !bg-white !text-black !border-gray-300"
+              style={{backgroundColor: 'white !important', color: 'black !important', borderColor: '#d1d5db !important'}}
             />
             <Button 
               onClick={handleSendMessage} 
