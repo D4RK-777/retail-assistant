@@ -215,8 +215,8 @@ const ChatTesting: React.FC = () => {
           </Dialog>
         </CardHeader>
 
-        <CardContent className="flex-1 p-0">
-          <ScrollArea ref={scrollAreaRef} className="h-full p-4">
+        <CardContent className="flex-1 p-0 overflow-hidden">
+          <ScrollArea ref={scrollAreaRef} className="h-[calc(100vh-16rem)] p-4">
             <div className="space-y-4">
               {messages.length === 0 && (
                 <div className="text-center text-muted-foreground py-8">
