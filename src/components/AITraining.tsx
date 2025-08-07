@@ -127,21 +127,21 @@ export function AITraining() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "completed": return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case "completed": return <CheckCircle className="h-4 w-4 text-foreground" />;
       case "processing": 
-      case "pending": return <Clock className="h-4 w-4 text-blue-600" />;
-      case "failed": return <AlertCircle className="h-4 w-4 text-red-600" />;
-      default: return <Clock className="h-4 w-4 text-gray-600" />;
+      case "pending": return <Clock className="h-4 w-4 text-primary" />;
+      case "failed": return <AlertCircle className="h-4 w-4 text-destructive" />;
+      default: return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed": return "bg-green-100 text-green-700";
+      case "completed": return "bg-card text-foreground border-border";
       case "processing":
-      case "pending": return "bg-blue-100 text-blue-700";
-      case "failed": return "bg-red-100 text-red-700";
-      default: return "bg-gray-100 text-gray-700";
+      case "pending": return "bg-card text-primary border-border";
+      case "failed": return "bg-card text-destructive border-border";
+      default: return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -196,7 +196,7 @@ export function AITraining() {
             {currentTraining ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 bg-blue-600 rounded-full animate-pulse"></div>
+                  <div className="h-2 w-2 bg-primary rounded-full animate-pulse"></div>
                   <span className="font-medium">
                     {currentTraining.type === "full" ? "Full" : "Incremental"} training in progress
                   </span>

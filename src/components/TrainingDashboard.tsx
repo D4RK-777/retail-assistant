@@ -92,10 +92,10 @@ export function TrainingDashboard() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "high": return "text-red-600 bg-red-50 border-red-200";
-      case "medium": return "text-gray-600 bg-white border-gray-200";
-      case "low": return "text-blue-600 bg-blue-50 border-blue-200";
-      default: return "text-gray-600 bg-gray-50 border-gray-200";
+      case "high": return "text-destructive bg-card border-border";
+      case "medium": return "text-muted-foreground bg-card border-border";
+      case "low": return "text-primary bg-card border-border";
+      default: return "text-muted-foreground bg-muted border-border";
     }
   };
 
@@ -255,19 +255,19 @@ export function TrainingDashboard() {
         <CardContent>
           <div className="space-y-3">
             <div className="flex items-center gap-3 p-3 border rounded-lg">
-              <div className="p-2 bg-green-100 rounded-full">
-                <Brain className="h-4 w-4 text-green-600" />
+              <div className="p-2 bg-card rounded-full border">
+                <Brain className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
                 <p className="font-medium">Full training completed</p>
                 <p className="text-sm text-muted-foreground">2 hours ago • Processed 8 sources</p>
               </div>
-              <Badge className="bg-green-100 text-green-700">Completed</Badge>
+              <Badge className="bg-card text-foreground border-border">Completed</Badge>
             </div>
             
             <div className="flex items-center gap-3 p-3 border rounded-lg">
-              <div className="p-2 bg-blue-100 rounded-full">
-                <Zap className="h-4 w-4 text-blue-600" />
+              <div className="p-2 bg-card rounded-full border">
+                <Zap className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
                 <p className="font-medium">Incremental training</p>

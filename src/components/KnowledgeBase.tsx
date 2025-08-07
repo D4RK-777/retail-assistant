@@ -232,18 +232,18 @@ export function KnowledgeBase() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed": return "text-green-600";
-      case "processing": return "text-blue-600";
-      case "error": return "text-red-600";
-      default: return "text-gray-600";
+      case "completed": return "text-foreground";
+      case "processing": return "text-muted-foreground";
+      case "error": return "text-destructive";
+      default: return "text-muted-foreground";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "completed": return <Check className="h-4 w-4 text-green-600" />;
-      case "processing": return <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />;
-      case "error": return <X className="h-4 w-4 text-red-600" />;
+      case "completed": return <Check className="h-4 w-4 text-foreground" />;
+      case "processing": return <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />;
+      case "error": return <X className="h-4 w-4 text-destructive" />;
       default: return null;
     }
   };
@@ -269,7 +269,7 @@ export function KnowledgeBase() {
           </p>
         </div>
         
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+        <Badge variant="outline" className="bg-card text-card-foreground border-border">
           <Globe className="h-4 w-4 mr-2" />
           Custom Crawler Powered by Supabase
         </Badge>

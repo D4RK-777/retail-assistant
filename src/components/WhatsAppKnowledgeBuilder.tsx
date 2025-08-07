@@ -172,7 +172,7 @@ export const WhatsAppKnowledgeBuilder: React.FC = () => {
                 key={index}
                 className={`p-3 border rounded-lg transition-colors ${
                   completedUrls.includes(docItem.url) 
-                    ? 'bg-green-50 border-green-200 dark:bg-green-950/20' 
+                    ? 'bg-card border-border' 
                     : 'bg-background'
                 }`}
               >
@@ -207,10 +207,10 @@ export const WhatsAppKnowledgeBuilder: React.FC = () => {
         {/* Errors */}
         {errors.length > 0 && (
           <div>
-            <h3 className="text-lg font-semibold mb-2 text-red-600">Errors</h3>
+            <h3 className="text-lg font-semibold mb-2 text-destructive">Errors</h3>
             <div className="space-y-1">
               {errors.map((error, index) => (
-                <p key={index} className="text-sm text-red-600 bg-red-50 dark:bg-red-950/20 p-2 rounded">
+                <p key={index} className="text-sm text-destructive bg-card p-2 rounded border">
                   {error}
                 </p>
               ))}
@@ -220,9 +220,9 @@ export const WhatsAppKnowledgeBuilder: React.FC = () => {
 
         {/* Status Summary */}
         {completedUrls.length > 0 && !isBuilding && (
-          <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100">Knowledge Base Status</h3>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
+          <div className="bg-card p-4 rounded-lg border">
+            <h3 className="font-semibold text-foreground">Knowledge Base Status</h3>
+            <p className="text-sm text-muted-foreground">
               Successfully added {completedUrls.length} WhatsApp Business API documentation pages. 
               Your AI now has comprehensive knowledge of Meta's WhatsApp platform including API endpoints, 
               webhooks, templates, and best practices.
