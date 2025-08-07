@@ -38,7 +38,7 @@ All colors MUST be HSL.
     --ring: 263 70% 50%;
 
     --gradient-primary: linear-gradient(135deg, hsl(263 70% 50%), hsl(270 80% 65%));
-    --gradient-background: linear-gradient(180deg, hsl(248 250 252), hsl(249 24% 98%));
+    --gradient-background: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%));
     --shadow-soft: 0 4px 20px -4px hsl(263 70% 50% / 0.15);
     --shadow-card: 0 2px 10px -2px hsl(226 24% 12% / 0.1);
 

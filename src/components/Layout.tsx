@@ -20,7 +20,7 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-background">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm">
         <div className="flex h-16 items-center gap-4 px-6">
