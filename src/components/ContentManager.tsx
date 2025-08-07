@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { CrawlerService, ScrapedPage } from "@/services/CrawlerService";
+import { FileUploadService, UploadedFile } from "@/services/FileUploadService";
 
 interface ContentSource {
   id: string;
@@ -16,6 +17,7 @@ interface ContentSource {
   size?: string;
   status: "pending" | "processing" | "completed" | "error";
   scrapedPages?: ScrapedPage[];
+  uploadedFile?: UploadedFile;
   selected: boolean;
   pageCount?: number;
   expanded?: boolean;
@@ -33,10 +35,28 @@ export function ContentManager() {
   }, []);
 
   const loadContent = async () => {
-    const pages = await CrawlerService.getScrapedPages();
+    const [pages, uploadedFiles] = await Promise.all([
+      CrawlerService.getScrapedPages(),
+      FileUploadService.getUploadedFiles()
+    ]);
     
     // Group content by domain
     const sourceMap = new Map<string, ContentSource>();
+    
+    // Add uploaded files
+    uploadedFiles.forEach(file => {
+      sourceMap.set(`file-${file.id}`, {
+        id: file.id,
+        type: "file",
+        name: file.original_name,
+        size: `${(file.file_size / 1024 / 1024).toFixed(2)} MB`,
+        status: "completed",
+        uploadedFile: file,
+        selected: true,
+        pageCount: 1,
+        expanded: false
+      });
+    });
     
     pages.forEach(page => {
       try {
@@ -80,10 +100,10 @@ export function ContentManager() {
     setSources(Array.from(sourceMap.values()));
   };
 
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     
-    files.forEach((file) => {
+    for (const file of files) {
       const newSource: ContentSource = {
         id: crypto.randomUUID(),
         type: "file",
@@ -95,18 +115,46 @@ export function ContentManager() {
       
       setSources(prev => [...prev, newSource]);
       
-      setTimeout(() => {
+      try {
+        const result = await FileUploadService.uploadFile(file);
+        
+        if (result.success) {
+          setSources(prev => 
+            prev.map(source => 
+              source.id === newSource.id 
+                ? { ...source, status: "completed", uploadedFile: result.file, id: result.file!.id } 
+                : source
+            )
+          );
+          toast({
+            title: "File uploaded",
+            description: `${file.name} added to content library`,
+          });
+        } else {
+          setSources(prev => 
+            prev.map(source => 
+              source.id === newSource.id ? { ...source, status: "error" } : source
+            )
+          );
+          toast({
+            title: "Upload failed",
+            description: result.error || "Failed to upload file",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
         setSources(prev => 
           prev.map(source => 
-            source.id === newSource.id ? { ...source, status: "completed" } : source
+            source.id === newSource.id ? { ...source, status: "error" } : source
           )
         );
         toast({
-          title: "File uploaded",
-          description: `${file.name} added to content library`,
+          title: "Error",
+          description: "Failed to upload file",
+          variant: "destructive"
         });
-      }, 2000);
-    });
+      }
+    }
     
     event.target.value = "";
   }, [toast]);
@@ -215,13 +263,18 @@ export function ContentManager() {
 
   const handleDelete = async (id: string) => {
     const source = sources.find(s => s.id === id);
-    if (source?.scrapedPages) {
+    
+    if (source?.uploadedFile) {
+      // Delete uploaded file
+      await FileUploadService.deleteUploadedFile(source.uploadedFile.id);
+    } else if (source?.scrapedPages) {
+      // Remove scraped pages from database
       for (const page of source.scrapedPages) {
         await CrawlerService.deleteScrapedPage(page.url);
       }
     }
     
-    setSources(prev => prev.filter(s => s.id !== id));
+    await loadContent();
     toast({
       title: "Content removed",
       description: "Source removed from library",

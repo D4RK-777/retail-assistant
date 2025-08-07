@@ -1166,6 +1166,48 @@ export type Database = {
           },
         ]
       }
+      uploaded_files: {
+        Row: {
+          content: string | null
+          created_at: string
+          file_name: string
+          file_size: number
+          file_type: string
+          id: string
+          mime_type: string | null
+          original_name: string
+          storage_path: string
+          updated_at: string
+          uploaded_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          file_name: string
+          file_size: number
+          file_type: string
+          id?: string
+          mime_type?: string | null
+          original_name: string
+          storage_path: string
+          updated_at?: string
+          uploaded_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          mime_type?: string | null
+          original_name?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_at?: string
+        }
+        Relationships: []
+      }
       urls: {
         Row: {
           analytics: Json
@@ -1603,6 +1645,14 @@ export type Database = {
       hnswhandler: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      increment_endpoint_clicks: {
+        Args: { endpoint_id: number }
+        Returns: undefined
+      }
+      increment_smart_url_clicks: {
+        Args: { url_id: string }
+        Returns: undefined
       }
       increment_visit_count: {
         Args: { url_id: number }

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { CrawlerService, ScrapedPage } from "@/services/CrawlerService";
+import { FileUploadService, UploadedFile } from "@/services/FileUploadService";
 import { WhatsAppKnowledgeBuilder } from "./WhatsAppKnowledgeBuilder";
 
 interface KnowledgeItem {
@@ -17,6 +18,7 @@ interface KnowledgeItem {
   size?: string;
   status: "pending" | "processing" | "completed" | "error";
   scrapedPages?: ScrapedPage[];
+  uploadedFile?: UploadedFile;
 }
 
 export function KnowledgeBase() {
@@ -28,15 +30,33 @@ export function KnowledgeBase() {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadScrapedPages();
+    loadAllContent();
   }, []);
 
-  const loadScrapedPages = async () => {
-    const pages = await CrawlerService.getScrapedPages();
+  const loadAllContent = async () => {
+    const [pages, uploadedFiles] = await Promise.all([
+      CrawlerService.getScrapedPages(),
+      FileUploadService.getUploadedFiles()
+    ]);
+    
     setScrapedPages(pages);
     
     // Convert scraped pages to knowledge items for display
     const items: KnowledgeItem[] = [];
+    
+    // Add uploaded files
+    uploadedFiles.forEach(file => {
+      items.push({
+        id: file.id,
+        type: "file",
+        name: file.original_name,
+        size: `${(file.file_size / 1024 / 1024).toFixed(2)} MB`,
+        status: "completed",
+        uploadedFile: file
+      });
+    });
+    
+    // Group scraped pages by domain
     const domainGroups = new Map<string, ScrapedPage[]>();
     
     pages.forEach(page => {
@@ -83,10 +103,10 @@ export function KnowledgeBase() {
   };
 
 
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     
-    files.forEach((file) => {
+    for (const file of files) {
       const newItem: KnowledgeItem = {
         id: crypto.randomUUID(),
         type: "file",
@@ -97,19 +117,46 @@ export function KnowledgeBase() {
       
       setKnowledgeItems(prev => [...prev, newItem]);
       
-      // Simulate file processing (in real app, you'd upload to your backend)
-      setTimeout(() => {
+      try {
+        const result = await FileUploadService.uploadFile(file);
+        
+        if (result.success) {
+          setKnowledgeItems(prev => 
+            prev.map(item => 
+              item.id === newItem.id 
+                ? { ...item, status: "completed", uploadedFile: result.file, id: result.file!.id } 
+                : item
+            )
+          );
+          toast({
+            title: "File uploaded successfully",
+            description: `${file.name} has been added to your knowledge base.`,
+          });
+        } else {
+          setKnowledgeItems(prev => 
+            prev.map(item => 
+              item.id === newItem.id ? { ...item, status: "error" } : item
+            )
+          );
+          toast({
+            title: "Upload failed",
+            description: result.error || "Failed to upload file",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
         setKnowledgeItems(prev => 
           prev.map(item => 
-            item.id === newItem.id ? { ...item, status: "completed" } : item
+            item.id === newItem.id ? { ...item, status: "error" } : item
           )
         );
         toast({
-          title: "File uploaded successfully",
-          description: `${file.name} has been added to your knowledge base.`,
+          title: "Error",
+          description: "An error occurred while uploading the file",
+          variant: "destructive"
         });
-      }, 2000);
-    });
+      }
+    }
     
     event.target.value = "";
   }, [toast]);
@@ -132,7 +179,7 @@ export function KnowledgeBase() {
       const result = await CrawlerService.scrapeUrl(currentUrl);
       
       if (result.success) {
-        await loadScrapedPages();
+        await loadAllContent();
         toast({
           title: "URL scraped successfully",
           description: `Content from ${currentUrl} has been added to your knowledge base.`,
@@ -183,7 +230,7 @@ export function KnowledgeBase() {
       const result = await CrawlerService.crawlDomain(domainUrl, maxPages);
       
       if (result.success) {
-        await loadScrapedPages();
+        await loadAllContent();
         toast({
           title: "Domain crawled successfully",
           description: `Found ${result.totalPages || 0} pages from ${currentDomain} and added to your knowledge base.`,
@@ -216,14 +263,18 @@ export function KnowledgeBase() {
 
   const handleDelete = async (id: string) => {
     const item = knowledgeItems.find(i => i.id === id);
-    if (item?.scrapedPages) {
+    
+    if (item?.uploadedFile) {
+      // Delete uploaded file
+      await FileUploadService.deleteUploadedFile(item.uploadedFile.id);
+    } else if (item?.scrapedPages) {
       // Remove scraped pages from database
       for (const page of item.scrapedPages) {
         await CrawlerService.deleteScrapedPage(page.url);
       }
     }
     
-    await loadScrapedPages();
+    await loadAllContent();
     toast({
       title: "Item removed",
       description: "The knowledge source has been removed from your database.",
