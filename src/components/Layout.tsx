@@ -78,7 +78,7 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
         </aside>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-hidden">
           {children}
         </main>
       </div>
