@@ -57,16 +57,19 @@ export function ContentManager() {
         }
         
         const domainSource = sourceMap.get(domainKey)!;
+        // Add selected property to page
+        (page as any).selected = true;
         domainSource.scrapedPages!.push(page);
         domainSource.pageCount = domainSource.scrapedPages!.length;
       } catch (error) {
         // Individual URL fallback
+        const pageWithSelection = { ...page, selected: true } as any;
         sourceMap.set(`url-${page.id}`, {
           id: `url-${page.id}`,
           type: "url",
           name: page.url,
           status: "completed",
-          scrapedPages: [page],
+          scrapedPages: [pageWithSelection],
           selected: true,
           pageCount: 1,
           expanded: false
@@ -241,7 +244,19 @@ export function ContentManager() {
     );
   };
 
-  // Remove the page selection function since ScrapedPage doesn't have selected property
+  const togglePageSelection = (sourceId: string, pageId: string) => {
+    setSources(prev => 
+      prev.map(source => {
+        if (source.id === sourceId && source.scrapedPages) {
+          const updatedPages = source.scrapedPages.map(page => 
+            page.id === pageId ? { ...page, selected: !(page as any).selected } : page
+          );
+          return { ...source, scrapedPages: updatedPages };
+        }
+        return source;
+      })
+    );
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -448,12 +463,16 @@ export function ContentManager() {
 
                   {/* Individual Pages (when expanded) */}
                   {source.expanded && source.scrapedPages && source.scrapedPages.length > 0 && (
-                    <div className="border-t bg-accent/20">
+                    <div className="border-t">
                       {source.scrapedPages.map((page, index) => (
                         <div
                           key={page.id}
-                          className="flex items-center gap-3 p-3 pl-12 text-sm border-b last:border-b-0 hover:bg-accent/30"
+                          className="flex items-center gap-3 p-3 pl-6 text-sm border-b last:border-b-0 hover:bg-muted/50"
                         >
+                          <Checkbox
+                            checked={(page as any).selected || false}
+                            onCheckedChange={() => togglePageSelection(source.id, page.id)}
+                          />
                           <span className="text-xs text-muted-foreground font-mono w-6">
                             {index + 1}.
                           </span>
