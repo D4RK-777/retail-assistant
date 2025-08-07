@@ -17,10 +17,10 @@ serve(async (req) => {
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
+    if (!geminiApiKey) {
+      throw new Error('Gemini API key not configured');
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -55,16 +55,19 @@ serve(async (req) => {
     // Process each page
     for (const page of pages) {
       try {
-        // Generate embeddings using OpenAI
-        const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+        // Generate embeddings using Google Gemini
+        const embeddingResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${openaiApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'text-embedding-3-small',
-            input: `${page.title || ''}\n\n${page.content || ''}`.slice(0, 8000), // Limit content length
+            model: 'models/text-embedding-004',
+            content: {
+              parts: [{
+                text: `${page.title || ''}\n\n${page.content || ''}`.slice(0, 8000)
+              }]
+            }
           }),
         });
 
@@ -74,7 +77,7 @@ serve(async (req) => {
         }
 
         const embeddingData = await embeddingResponse.json();
-        const embedding = embeddingData.data[0].embedding;
+        const embedding = embeddingData.embedding.values;
 
         // Store content chunk with embedding
         const { error: chunkError } = await supabase
