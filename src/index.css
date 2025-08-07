@@ -173,4 +173,32 @@ All colors MUST be HSL.
     color: #000000 !important;
     border-color: #d1d5db !important;
   }
+
+  /* DESTROY SONNER TOAST YELLOW */
+  [data-sonner-toast],
+  [data-sonner-toaster],
+  .sonner-toast,
+  .toaster,
+  .toast {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #d1d5db !important;
+  }
+
+  /* OBLITERATE ALL TOAST VARIANTS */
+  [data-sonner-toast][data-type="success"],
+  [data-sonner-toast][data-type="error"],
+  [data-sonner-toast][data-type="warning"],
+  [data-sonner-toast][data-type="info"],
+  .toast-success,
+  .toast-error,
+  .toast-warning,
+  .toast-info {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #d1d5db !important;
+  }
+}
 }
