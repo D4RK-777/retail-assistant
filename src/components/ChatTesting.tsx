@@ -154,8 +154,8 @@ const ChatTesting: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 max-h-screen flex flex-col">
-      <Card className="flex-1 flex flex-col max-h-full overflow-hidden">
+    <div className="container mx-auto p-6 h-[calc(100vh-2rem)] flex flex-col">
+      <Card className="flex-1 flex flex-col h-full overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <Bot className="w-6 h-6 text-primary" />
