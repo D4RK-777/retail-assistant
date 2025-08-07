@@ -62,6 +62,8 @@ serve(async (req) => {
     for (const page of pages) {
       try {
         // Generate embeddings using Google Gemini
+        console.log(`Generating embedding for page ${page.id}: ${page.title}`);
+        
         const embeddingResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
           method: 'POST',
           headers: {
@@ -78,14 +80,24 @@ serve(async (req) => {
         });
 
         if (!embeddingResponse.ok) {
-          console.error(`Failed to generate embedding for page ${page.id}`);
+          const errorText = await embeddingResponse.text();
+          console.error(`Failed to generate embedding for page ${page.id}:`, errorText);
           continue;
         }
 
         const embeddingData = await embeddingResponse.json();
+        console.log(`Embedding response for page ${page.id}:`, JSON.stringify(embeddingData).slice(0, 200));
+        
+        if (!embeddingData.embedding || !embeddingData.embedding.values) {
+          console.error(`Invalid embedding response for page ${page.id}:`, embeddingData);
+          continue;
+        }
+        
         const embedding = embeddingData.embedding.values;
 
         // Store content chunk with embedding
+        console.log(`Storing chunk for page ${page.id} with embedding length: ${embedding.length}`);
+        
         const { error: chunkError } = await supabase
           .from('content_chunks')
           .upsert({
@@ -98,8 +110,10 @@ serve(async (req) => {
             token_count: Math.ceil((page.content?.length || 0) / 4) // Rough token estimate
           });
 
+        console.log(`Upsert result for page ${page.id}:`, chunkError ? 'ERROR' : 'SUCCESS');
+
         if (chunkError) {
-          console.error(`Failed to store chunk for page ${page.id}:`, chunkError);
+          console.error(`Failed to store chunk for page ${page.id}:`, JSON.stringify(chunkError, null, 2));
         } else {
           processedCount++;
           console.log(`Successfully processed page ${page.id} (${processedCount}/${pages.length})`);
