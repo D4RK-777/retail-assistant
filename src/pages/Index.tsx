@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Layout } from "@/components/Layout";
-import { KnowledgeBase } from "@/components/KnowledgeBase";
-import { TrainingDashboard } from "@/components/TrainingDashboard";
+import { ContentManager } from "@/components/ContentManager";
+import { AITraining } from "@/components/AITraining";
 import ChatTesting from "@/components/ChatTesting";
 
 const Index = () => {
@@ -10,9 +10,9 @@ const Index = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "knowledge":
-        return <KnowledgeBase />;
+        return <ContentManager />;
       case "training":
-        return <TrainingDashboard />;
+        return <AITraining />;
       case "testing":
         return <ChatTesting />;
       case "settings":
@@ -23,7 +23,7 @@ const Index = () => {
           </div>
         );
       default:
-        return <KnowledgeBase />;
+        return <ContentManager />;
     }
   };
 
