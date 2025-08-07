@@ -7,17 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { CrawlerService } from "@/services/CrawlerService";
-
-interface TrainingSession {
-  id: string;
-  type: "full" | "incremental";
-  status: "running" | "completed" | "failed";
-  progress: number;
-  sourcesProcessed: number;
-  totalSources: number;
-  startTime: Date;
-  endTime?: Date;
-}
+import { AITrainingService, TrainingSession } from "@/services/AITrainingService";
 
 export function AITraining() {
   const [currentTraining, setCurrentTraining] = useState<TrainingSession | null>(null);
@@ -28,40 +18,64 @@ export function AITraining() {
 
   useEffect(() => {
     loadTrainingData();
-  }, []);
+    
+    // Poll for current training progress
+    const interval = setInterval(async () => {
+      if (currentTraining && currentTraining.status === 'processing') {
+        try {
+          const updated = await AITrainingService.getSessionProgress(currentTraining.id);
+          if (updated) {
+            setCurrentTraining(updated);
+            
+            if (updated.status === 'completed') {
+              toast({
+                title: "Training completed!",
+                description: `AI successfully trained on ${updated.total_content} sources`,
+              });
+              loadTrainingData(); // Refresh history
+            } else if (updated.status === 'failed') {
+              toast({
+                title: "Training failed",
+                description: updated.error_message || "Training encountered an error",
+                variant: "destructive"
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Failed to get training progress:', error);
+        }
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [currentTraining, toast]);
 
   const loadTrainingData = async () => {
-    // Get selected sources count
-    const pages = await CrawlerService.getScrapedPages();
-    setSelectedSources(pages.length > 0 ? Math.ceil(pages.length / 5) : 0); // Rough estimate of sources
-    setTotalPages(pages.length);
+    try {
+      // Get selected sources count
+      const pages = await CrawlerService.getScrapedPages();
+      setSelectedSources(pages.length > 0 ? Math.ceil(pages.length / 5) : 0);
+      setTotalPages(pages.length);
 
-    // Mock training history
-    setTrainingHistory([
-      {
-        id: "1",
-        type: "full",
-        status: "completed",
-        progress: 100,
-        sourcesProcessed: 8,
-        totalSources: 8,
-        startTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        endTime: new Date(Date.now() - 1 * 60 * 60 * 1000) // 1 hour ago
-      },
-      {
-        id: "2", 
-        type: "incremental",
-        status: "completed",
-        progress: 100,
-        sourcesProcessed: 3,
-        totalSources: 3,
-        startTime: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-        endTime: new Date(Date.now() - 24 * 60 * 60 * 1000 + 10 * 60 * 1000) // 10 minutes later
-      }
-    ]);
+      // Load real training history
+      const sessions = await AITrainingService.getTrainingSessions();
+      setTrainingHistory(sessions);
+      
+      // Check if there's an active session
+      const activeSession = sessions.find(s => s.status === 'pending' || s.status === 'processing');
+      setCurrentTraining(activeSession || null);
+      
+    } catch (error) {
+      console.error('Failed to load training data:', error);
+      toast({
+        title: "Error loading data",
+        description: "Failed to load training information",
+        variant: "destructive"
+      });
+    }
   };
 
-  const startTraining = (type: "full" | "incremental") => {
+  const startTraining = async (type: "full" | "incremental") => {
     if (selectedSources === 0) {
       toast({
         title: "No content selected",
@@ -71,59 +85,32 @@ export function AITraining() {
       return;
     }
 
-    const newTraining: TrainingSession = {
-      id: crypto.randomUUID(),
-      type,
-      status: "running",
-      progress: 0,
-      sourcesProcessed: 0,
-      totalSources: selectedSources,
-      startTime: new Date()
-    };
-
-    setCurrentTraining(newTraining);
-
-    toast({
-      title: `${type === "full" ? "Full" : "Incremental"} training started`,
-      description: `Training AI on ${selectedSources} selected sources`,
-    });
-
-    // Simulate training progress
-    const interval = setInterval(() => {
-      setCurrentTraining(prev => {
-        if (!prev) return null;
-        
-        const newProgress = Math.min(prev.progress + Math.random() * 15, 100);
-        const newSourcesProcessed = Math.floor((newProgress / 100) * prev.totalSources);
-        
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          const completedTraining: TrainingSession = {
-            ...prev,
-            status: "completed",
-            progress: 100,
-            sourcesProcessed: prev.totalSources,
-            endTime: new Date()
-          };
-          
-          setTrainingHistory(history => [completedTraining, ...history]);
-          setCurrentTraining(null);
-          
-          toast({
-            title: "Training completed!",
-            description: `AI successfully trained on ${selectedSources} sources`,
-          });
-          
-          return completedTraining;
-        }
-        
-        return {
-          ...prev,
-          progress: newProgress,
-          sourcesProcessed: newSourcesProcessed
-        };
+    if (currentTraining && (currentTraining.status === 'pending' || currentTraining.status === 'processing')) {
+      toast({
+        title: "Training already in progress",
+        description: "Please wait for the current training to complete",
+        variant: "destructive"
       });
-    }, 1000);
+      return;
+    }
+
+    try {
+      const session = await AITrainingService.startTraining(type);
+      setCurrentTraining(session);
+
+      toast({
+        title: `${type === "full" ? "Full" : "Incremental"} training started`,
+        description: `Training AI on content from your sources`,
+      });
+
+    } catch (error) {
+      console.error('Failed to start training:', error);
+      toast({
+        title: "Failed to start training",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      });
+    }
   };
 
   const formatDuration = (start: Date, end?: Date) => {
@@ -141,7 +128,8 @@ export function AITraining() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed": return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "running": return <Clock className="h-4 w-4 text-blue-600" />;
+      case "processing": 
+      case "pending": return <Clock className="h-4 w-4 text-blue-600" />;
       case "failed": return <AlertCircle className="h-4 w-4 text-red-600" />;
       default: return <Clock className="h-4 w-4 text-gray-600" />;
     }
@@ -150,7 +138,8 @@ export function AITraining() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed": return "bg-green-100 text-green-700";
-      case "running": return "bg-blue-100 text-blue-700";
+      case "processing":
+      case "pending": return "bg-blue-100 text-blue-700";
       case "failed": return "bg-red-100 text-red-700";
       default: return "bg-gray-100 text-gray-700";
     }
@@ -222,7 +211,7 @@ export function AITraining() {
                 </div>
                 
                 <div className="text-sm text-muted-foreground">
-                  Processing {currentTraining.sourcesProcessed} of {currentTraining.totalSources} sources
+                  Processed {currentTraining.processed_content} of {currentTraining.total_content || 'calculating...'} content pieces
                 </div>
               </div>
             ) : (
@@ -282,7 +271,7 @@ export function AITraining() {
                         {session.type === "full" ? "Full Training" : "Incremental Training"}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {session.sourcesProcessed} sources • {formatDuration(session.startTime, session.endTime)}
+                        {session.processed_content} content pieces • {formatDuration(session.created_at, session.completed_at)}
                       </div>
                     </div>
                   </div>
@@ -292,7 +281,7 @@ export function AITraining() {
                       {session.status}
                     </Badge>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {session.endTime?.toLocaleTimeString() || "In progress"}
+                      {session.completed_at?.toLocaleTimeString() || "In progress"}
                     </div>
                   </div>
                 </div>
