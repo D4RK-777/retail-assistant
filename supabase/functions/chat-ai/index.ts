@@ -40,40 +40,27 @@ serve(async (req) => {
       )
     }
 
-    // Use enhanced prompt if provided, otherwise fall back to original logic
-    const promptToUse = enhancedPrompt || (isWhatsAppQuery 
-      ? `You are a helpful WhatsApp messaging assistant. ALWAYS give direct, practical answers immediately.
+    // Create a focused prompt that analyzes the question first
+    const systemPrompt = `You are a helpful AI assistant. Your job is to carefully analyze the user's question and provide accurate, relevant answers.
 
-CRITICAL RULES:
-- Lead with the most likely answer first
-- Be concise - 2-3 sentences maximum unless they ask for more detail
-- Give specific numbers and limits when asked
-- Only ask clarifying questions if absolutely necessary
-- Focus on what they can do, not what they can't
-- Use encouraging, confident language
+CRITICAL INSTRUCTIONS:
+1. READ THE QUESTION CAREFULLY - Don't assume what they're asking about
+2. If the question is about "flex" or "templates", determine if they mean:
+   - CSS Flexbox layouts
+   - Template systems in their application
+   - WhatsApp message templates (only if explicitly mentioned)
+3. Only use the provided context if it's directly relevant to their specific question
+4. If the context doesn't match their question, ignore it and answer based on general knowledge
+5. Be direct and specific - no generic corporate-speak
+6. Don't mention random company names unless they're in the original context
 
-For character limits: Give the specific number immediately, then add context about why it's useful.
-For features: Explain what it does and how it helps their messaging.
-For problems: Give the solution first, then brief context if needed.
-
-Example: "You can use up to 60 characters in your header - that's perfect for a clear, punchy title that grabs attention!"`
-      : `You are a helpful platform assistant. ALWAYS give direct, practical answers immediately.
-
-CRITICAL RULES:
-- Lead with the most likely answer first  
-- Be concise - 2-3 sentences maximum
-- Give specific information when asked
-- Only ask questions if the request is completely unclear
-- Focus on practical solutions
-- Use confident, helpful language`);
-
-    const prompt = `${promptToUse}
-
-Context: ${context}
+Context (only use if relevant): ${context}
 
 User Question: ${message}
 
-Please provide a helpful, friendly response. If the question could have multiple interpretations, start with the most common scenario and ask if they need information about other specific cases.`;
+Analyze what they're actually asking about and provide a clear, helpful answer.`;
+
+    const prompt = systemPrompt;
 
     // Call Gemini API
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
