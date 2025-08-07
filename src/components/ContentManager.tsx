@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { Upload, Globe, FileText, Trash2, Plus, Check, X, Database } from "lucide-react";
+import { Upload, Globe, FileText, Trash2, Plus, Check, X, Database, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ interface ContentSource {
   scrapedPages?: ScrapedPage[];
   selected: boolean;
   pageCount?: number;
+  expanded?: boolean;
 }
 
 export function ContentManager() {
@@ -34,18 +35,46 @@ export function ContentManager() {
   const loadContent = async () => {
     const pages = await CrawlerService.getScrapedPages();
     
-    // Show individual pages, not grouped sources
-    const individualSources: ContentSource[] = pages.map(page => ({
-      id: page.id,
-      type: "url",
-      name: page.url,
-      status: "completed",
-      scrapedPages: [page],
-      selected: true,
-      pageCount: 1
-    }));
+    // Group content by domain
+    const sourceMap = new Map<string, ContentSource>();
+    
+    pages.forEach(page => {
+      try {
+        const hostname = new URL(page.url).hostname;
+        const domainKey = `domain-${hostname}`;
+        
+        if (!sourceMap.has(domainKey)) {
+          sourceMap.set(domainKey, {
+            id: domainKey,
+            type: "domain",
+            name: hostname,
+            status: "completed",
+            scrapedPages: [],
+            selected: true,
+            pageCount: 0,
+            expanded: false
+          });
+        }
+        
+        const domainSource = sourceMap.get(domainKey)!;
+        domainSource.scrapedPages!.push(page);
+        domainSource.pageCount = domainSource.scrapedPages!.length;
+      } catch (error) {
+        // Individual URL fallback
+        sourceMap.set(`url-${page.id}`, {
+          id: `url-${page.id}`,
+          type: "url",
+          name: page.url,
+          status: "completed",
+          scrapedPages: [page],
+          selected: true,
+          pageCount: 1,
+          expanded: false
+        });
+      }
+    });
 
-    setSources(individualSources);
+    setSources(Array.from(sourceMap.values()));
   };
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -204,6 +233,16 @@ export function ContentManager() {
     );
   };
 
+  const toggleExpanded = (id: string) => {
+    setSources(prev => 
+      prev.map(source => 
+        source.id === id ? { ...source, expanded: !source.expanded } : source
+      )
+    );
+  };
+
+  // Remove the page selection function since ScrapedPage doesn't have selected property
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed": return "text-green-600";
@@ -231,9 +270,13 @@ export function ContentManager() {
     }
   };
 
-  const selectedCount = sources.filter(s => s.selected && s.status === "completed").length;
-  const totalPages = sources.filter(s => s.status === "completed").length;
-  const selectedPages = sources.filter(s => s.selected && s.status === "completed").length;
+  // Calculate actual page counts
+  const totalPages = sources
+    .filter(s => s.status === "completed")
+    .reduce((sum, s) => sum + (s.pageCount || 1), 0);
+  const selectedPages = sources
+    .filter(s => s.selected && s.status === "completed")
+    .reduce((sum, s) => sum + (s.pageCount || 1), 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -342,51 +385,89 @@ export function ContentManager() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5" />
-              Individual Pages ({sources.length})
+              Content Sources ({sources.length} domains)
             </CardTitle>
             <CardDescription>
-              Select specific pages to include in AI training
+              Expand domains to see individual pages and select which to include in AI training
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {sources.map((source) => (
-                <div
-                  key={source.id}
-                  className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50"
-                >
-                  <Checkbox
-                    checked={source.selected}
-                    onCheckedChange={() => toggleSelection(source.id)}
-                    disabled={source.status !== "completed"}
-                  />
-                  
-                  <div className="flex items-center gap-2">
-                    {getTypeIcon(source.type)}
-                    {getStatusIcon(source.status)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-sm">{source.name}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className={getStatusColor(source.status)}>
-                        {source.status}
-                      </span>
-                      {source.size && <span>• {source.size}</span>}
-                      {source.name.includes('/') && (
-                        <span>• {new URL(source.name).hostname}</span>
-                      )}
+                <div key={source.id} className="border rounded-lg">
+                  {/* Domain Header */}
+                  <div className="flex items-center gap-3 p-3 hover:bg-accent/50">
+                    <Checkbox
+                      checked={source.selected}
+                      onCheckedChange={() => toggleSelection(source.id)}
+                      disabled={source.status !== "completed"}
+                    />
+                    
+                    <div className="flex items-center gap-2">
+                      {getTypeIcon(source.type)}
+                      {getStatusIcon(source.status)}
                     </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate text-sm">{source.name}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className={getStatusColor(source.status)}>
+                          {source.status}
+                        </span>
+                        {source.size && <span>• {source.size}</span>}
+                        {source.pageCount && source.pageCount > 1 && (
+                          <span>• {source.pageCount} pages</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expand button for domains with multiple pages */}
+                    {source.type === "domain" && source.pageCount && source.pageCount > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleExpanded(source.id)}
+                        className="h-6 w-6"
+                      >
+                        {source.expanded ? 
+                          <ChevronDown className="h-4 w-4" /> : 
+                          <ChevronRight className="h-4 w-4" />
+                        }
+                      </Button>
+                    )}
+                    
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(source.id)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                  
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(source.id)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+
+                  {/* Individual Pages (when expanded) */}
+                  {source.expanded && source.scrapedPages && source.scrapedPages.length > 0 && (
+                    <div className="border-t bg-accent/20">
+                      {source.scrapedPages.map((page, index) => (
+                        <div
+                          key={page.id}
+                          className="flex items-center gap-3 p-3 pl-12 text-sm border-b last:border-b-0 hover:bg-accent/30"
+                        >
+                          <span className="text-xs text-muted-foreground font-mono w-6">
+                            {index + 1}.
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="truncate font-medium">{page.title || 'Untitled'}</p>
+                            <p className="truncate text-xs text-muted-foreground">{page.url}</p>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {page.scraped_at && new Date(page.scraped_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
