@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_training_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          processed_content: number | null
+          progress: number | null
+          status: string
+          total_content: number | null
+          type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_content?: number | null
+          progress?: number | null
+          status?: string
+          total_content?: number | null
+          type: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_content?: number | null
+          progress?: number | null
+          status?: string
+          total_content?: number | null
+          type?: string
+        }
+        Relationships: []
+      }
       analytics: {
         Row: {
           analytics_id: string
@@ -85,6 +121,50 @@ export type Database = {
         }
         Relationships: []
       }
+      content_chunks: {
+        Row: {
+          chunk_index: number | null
+          content: string | null
+          created_at: string
+          embedding: string | null
+          id: string
+          source_id: string | null
+          title: string | null
+          token_count: number | null
+          url: string | null
+        }
+        Insert: {
+          chunk_index?: number | null
+          content?: string | null
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          source_id?: string | null
+          title?: string | null
+          token_count?: number | null
+          url?: string | null
+        }
+        Update: {
+          chunk_index?: number | null
+          content?: string | null
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          source_id?: string | null
+          title?: string | null
+          token_count?: number | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_chunks_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "scraped_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experiences: {
         Row: {
           app_name: string | null
@@ -101,6 +181,7 @@ export type Database = {
           status: string
           type: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           app_name?: string | null
@@ -117,6 +198,7 @@ export type Database = {
           status?: string
           type?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           app_name?: string | null
@@ -133,6 +215,7 @@ export type Database = {
           status?: string
           type?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1152,6 +1235,104 @@ export type Database = {
         }
         Relationships: []
       }
+      user_integrations: {
+        Row: {
+          created_at: string | null
+          id: string
+          integration_data: Json | null
+          integration_type: string
+          is_active: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          integration_data?: Json | null
+          integration_type: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          integration_data?: Json | null
+          integration_type?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_products: {
+        Row: {
+          created_at: string | null
+          id: string
+          integration_id: string | null
+          product_data: Json | null
+          product_id: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          integration_id?: string | null
+          product_data?: Json | null
+          product_id: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          integration_id?: string | null
+          product_data?: Json | null
+          product_id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_products_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "user_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           business_name: string | null
@@ -1422,6 +1603,10 @@ export type Database = {
       hnswhandler: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      increment_visit_count: {
+        Args: { url_id: number }
+        Returns: undefined
       }
       increment_visit_count_by_id: {
         Args: { url_id: number }

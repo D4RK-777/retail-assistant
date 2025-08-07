@@ -40,15 +40,21 @@ serve(async (req) => {
 
     console.log(`Processing ${pages.length} pages for session ${sessionId}`);
 
-    // Update session status to processing
-    await supabase
+    // Create session record first
+    const { error: sessionError } = await supabase
       .from('ai_training_sessions')
-      .update({ 
+      .insert({ 
+        id: sessionId,
+        type,
         status: 'processing',
         total_content: pages.length,
         processed_content: 0
-      })
-      .eq('id', sessionId);
+      });
+
+    if (sessionError) {
+      console.error('Failed to create session:', sessionError);
+      throw new Error(`Failed to create training session: ${sessionError.message}`);
+    }
 
     let processedCount = 0;
 
@@ -87,7 +93,7 @@ serve(async (req) => {
             content: page.content,
             title: page.title,
             url: page.url,
-            embedding: JSON.stringify(embedding),
+            embedding: embedding, // Gemini returns array directly
             chunk_index: 0,
             token_count: Math.ceil((page.content?.length || 0) / 4) // Rough token estimate
           });
@@ -96,15 +102,20 @@ serve(async (req) => {
           console.error(`Failed to store chunk for page ${page.id}:`, chunkError);
         } else {
           processedCount++;
+          console.log(`Successfully processed page ${page.id} (${processedCount}/${pages.length})`);
           
           // Update progress
-          await supabase
+          const { error: progressError } = await supabase
             .from('ai_training_sessions')
             .update({ 
               processed_content: processedCount,
               progress: Math.round((processedCount / pages.length) * 100)
             })
             .eq('id', sessionId);
+
+          if (progressError) {
+            console.error('Failed to update progress:', progressError);
+          }
         }
 
       } catch (error) {
@@ -113,7 +124,7 @@ serve(async (req) => {
     }
 
     // Mark session as completed
-    await supabase
+    const { error: completionError } = await supabase
       .from('ai_training_sessions')
       .update({ 
         status: 'completed',
@@ -121,6 +132,10 @@ serve(async (req) => {
         progress: 100
       })
       .eq('id', sessionId);
+
+    if (completionError) {
+      console.error('Failed to mark session as completed:', completionError);
+    }
 
     console.log(`Training session ${sessionId} completed. Processed ${processedCount}/${pages.length} pages.`);
 
