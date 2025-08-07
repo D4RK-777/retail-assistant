@@ -376,6 +376,8 @@ export function ContentManager() {
               value={newDomain}
               onChange={(e) => setNewDomain(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleDomainAdd()}
+              className="!bg-white !text-black !border-gray-300"
+              style={{backgroundColor: 'white !important', color: 'black !important', borderColor: '#d1d5db !important'}}
             />
             <div className="flex gap-2">
               <Input
