@@ -432,7 +432,7 @@ export function ContentManager() {
               {sources.map((source) => (
                 <div key={source.id} className="border rounded-lg">
                   {/* Domain Header */}
-                  <div className="flex items-center gap-3 p-3 hover:bg-accent/50">
+                  <div className="flex items-center gap-3 p-3 hover:bg-secondary/50">
                     <Checkbox
                       checked={source.selected}
                       onCheckedChange={() => toggleSelection(source.id)}

@@ -223,7 +223,7 @@ export function TrainingDashboard() {
               return (
                 <div 
                   key={rec.id} 
-                  className="flex items-start gap-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                  className="flex items-start gap-3 p-4 border rounded-lg hover:bg-secondary/50 transition-colors"
                 >
                   <div className={`p-2 rounded-full border ${getPriorityColor(rec.priority)}`}>
                     <Icon className="h-4 w-4" />

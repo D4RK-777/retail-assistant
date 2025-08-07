@@ -70,7 +70,7 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
               variant="ghost"
               size="icon"
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hover:bg-accent"
+              className="hover:bg-secondary"
             >
               <Settings className="h-4 w-4" />
             </Button>
