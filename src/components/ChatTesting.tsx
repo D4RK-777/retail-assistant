@@ -300,6 +300,8 @@ const ChatTesting: React.FC = () => {
               variant="outline" 
               size="sm"
               disabled={messages.length === 0}
+              className="!bg-white !text-black !border-gray-300 hover:!bg-gray-50"
+              style={{backgroundColor: 'white !important', color: 'black !important', borderColor: '#d1d5db !important'}}
             >
               <Trash2 className="w-4 h-4" />
             </Button>
