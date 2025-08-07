@@ -34,44 +34,18 @@ export function ContentManager() {
   const loadContent = async () => {
     const pages = await CrawlerService.getScrapedPages();
     
-    // Group content by source
-    const sourceMap = new Map<string, ContentSource>();
-    
-    pages.forEach(page => {
-      try {
-        const hostname = new URL(page.url).hostname;
-        const domainKey = `domain-${hostname}`;
-        
-        if (!sourceMap.has(domainKey)) {
-          sourceMap.set(domainKey, {
-            id: domainKey,
-            type: "domain",
-            name: hostname,
-            status: "completed",
-            scrapedPages: [],
-            selected: true,
-            pageCount: 0
-          });
-        }
-        
-        const domainSource = sourceMap.get(domainKey)!;
-        domainSource.scrapedPages!.push(page);
-        domainSource.pageCount = domainSource.scrapedPages!.length;
-      } catch (error) {
-        // Individual URL
-        sourceMap.set(`url-${page.id}`, {
-          id: `url-${page.id}`,
-          type: "url",
-          name: page.url,
-          status: "completed",
-          scrapedPages: [page],
-          selected: true,
-          pageCount: 1
-        });
-      }
-    });
+    // Show individual pages, not grouped sources
+    const individualSources: ContentSource[] = pages.map(page => ({
+      id: page.id,
+      type: "url",
+      name: page.url,
+      status: "completed",
+      scrapedPages: [page],
+      selected: true,
+      pageCount: 1
+    }));
 
-    setSources(Array.from(sourceMap.values()));
+    setSources(individualSources);
   };
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -258,9 +232,8 @@ export function ContentManager() {
   };
 
   const selectedCount = sources.filter(s => s.selected && s.status === "completed").length;
-  const totalPages = sources
-    .filter(s => s.selected && s.status === "completed")
-    .reduce((sum, s) => sum + (s.pageCount || 1), 0);
+  const totalPages = sources.filter(s => s.status === "completed").length;
+  const selectedPages = sources.filter(s => s.selected && s.status === "completed").length;
 
   return (
     <div className="p-6 space-y-6">
@@ -273,9 +246,9 @@ export function ContentManager() {
         </div>
         
         <div className="text-right">
-          <div className="text-2xl font-bold text-primary">{selectedCount}</div>
-          <div className="text-sm text-muted-foreground">sources selected</div>
-          <div className="text-xs text-muted-foreground">{totalPages} pages total</div>
+          <div className="text-2xl font-bold text-primary">{selectedPages}</div>
+          <div className="text-sm text-muted-foreground">pages selected</div>
+          <div className="text-xs text-muted-foreground">{totalPages} total pages</div>
         </div>
       </div>
 
@@ -369,14 +342,14 @@ export function ContentManager() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5" />
-              Content Sources ({sources.length})
+              Individual Pages ({sources.length})
             </CardTitle>
             <CardDescription>
-              Select which sources to include in AI training
+              Select specific pages to include in AI training
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-96 overflow-y-auto">
               {sources.map((source) => (
                 <div
                   key={source.id}
@@ -394,14 +367,14 @@ export function ContentManager() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{source.name}</p>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <p className="font-medium truncate text-sm">{source.name}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className={getStatusColor(source.status)}>
                         {source.status}
                       </span>
                       {source.size && <span>• {source.size}</span>}
-                      {source.pageCount && source.pageCount > 1 && (
-                        <span>• {source.pageCount} pages</span>
+                      {source.name.includes('/') && (
+                        <span>• {new URL(source.name).hostname}</span>
                       )}
                     </div>
                   </div>
