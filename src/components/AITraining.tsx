@@ -228,8 +228,9 @@ export function AITraining() {
                 <Button 
                   onClick={() => startTraining("incremental")}
                   disabled={selectedSources === 0}
-                  variant="secondary" 
-                  className="w-full bg-background text-foreground border-border hover:bg-muted"
+                  variant="outline" 
+                  className="w-full !bg-white !text-black !border-gray-300 hover:!bg-gray-50"
+                  style={{backgroundColor: 'white', color: 'black', borderColor: '#d1d5db'}}
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Update Training
