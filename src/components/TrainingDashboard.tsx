@@ -174,12 +174,12 @@ export function TrainingDashboard() {
             
             <Button 
               onClick={handleIncrementalTraining}
-              variant="outline" 
+              variant="secondary" 
               className="w-full"
               disabled={isTraining}
             >
               <Zap className="h-4 w-4 mr-2" />
-              Incremental Training
+              Update Training
             </Button>
             
             <Button 

@@ -166,7 +166,7 @@ const ChatTesting: React.FC = () => {
           </div>
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="secondary" size="sm">
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </Button>
@@ -285,7 +285,7 @@ const ChatTesting: React.FC = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="flex-1"
+              className="flex-1 bg-background border-border"
             />
             <Button 
               onClick={handleSendMessage} 

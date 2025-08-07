@@ -343,6 +343,7 @@ export function KnowledgeBase() {
                 value={newUrl}
                 onChange={(e) => setNewUrl(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleUrlAdd()}
+                className="bg-background border-border"
               />
             </div>
             <Button 
@@ -376,6 +377,7 @@ export function KnowledgeBase() {
                 value={newDomain}
                 onChange={(e) => setNewDomain(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleDomainAdd()}
+                className="bg-background border-border"
               />
             </div>
             <div className="flex gap-2">
@@ -384,7 +386,7 @@ export function KnowledgeBase() {
                 placeholder="Pages"
                 value={maxPages}
                 onChange={(e) => setMaxPages(Number(e.target.value))}
-                className="w-20"
+                className="w-20 bg-background border-border"
                 min="1"
                 max="50"
               />
