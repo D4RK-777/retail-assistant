@@ -155,15 +155,7 @@ export type Database = {
           token_count?: number | null
           url?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "content_chunks_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "scraped_pages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       experiences: {
         Row: {
