@@ -23,6 +23,30 @@ serve(async (req) => {
     const { message, context, sessionId } = await req.json()
     console.log('Received message:', message)
 
+    // Enhanced context retrieval from content chunks with improved categorization
+    let enhancedContext = context || '';
+    
+    try {
+      // Search content chunks for relevant content with enhanced importance scoring
+      const { data: relevantContent, error: searchError } = await supabase
+        .from('content_chunks')
+        .select('title, content, category, content_type, importance_score, tags')
+        .textSearch('content', message.split(' ').slice(0, 5).join(' | '), { type: 'websearch' })
+        .order('importance_score', { ascending: false })
+        .limit(5);
+
+      if (!searchError && relevantContent && relevantContent.length > 0) {
+        const contextSections = relevantContent.map(item => 
+          `**${item.title || 'Knowledge Item'}** (${item.category}/${item.content_type})\n${item.content.slice(0, 800)}...\n`
+        ).join('\n---\n');
+        
+        enhancedContext = `${context}\n\nRELEVANT KNOWLEDGE BASE CONTENT:\n${contextSections}`;
+        console.log(`Enhanced context with ${relevantContent.length} relevant items from enhanced knowledge base`);
+      }
+    } catch (error) {
+      console.warn('Failed to enhance context from knowledge base:', error.message);
+    }
+
     // Track user interaction for analytics
     const interactionStartTime = Date.now()
 
@@ -89,7 +113,7 @@ ANALYTICS & PERFORMANCE:
 - ROI measurement and reporting
 
 KNOWLEDGE BASE:
-${context}
+${enhancedContext}
 
 User Question: ${message}
 

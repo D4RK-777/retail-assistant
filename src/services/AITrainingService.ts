@@ -111,11 +111,12 @@ export class AITrainingService {
 
   static async searchContent(query: string): Promise<any[]> {
     try {
-      // Search through content chunks using text similarity
+      // Search through enhanced content chunks with improved categorization
       const { data: chunks, error } = await supabase
         .from('content_chunks')
         .select('*')
         .textSearch('content', query, { type: 'websearch' })
+        .order('importance_score', { ascending: false })
         .limit(10);
 
       if (error) {
@@ -126,6 +127,7 @@ export class AITrainingService {
           .from('content_chunks')
           .select('*')
           .ilike('content', `%${query}%`)
+          .order('importance_score', { ascending: false })
           .limit(10);
 
         if (fallbackError) {

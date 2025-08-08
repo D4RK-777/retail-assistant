@@ -149,42 +149,151 @@ serve(async (req) => {
         if (content.content.toLowerCase().includes('navigation')) tags.push('navigation')
         if (content.content.toLowerCase().includes('personalization')) tags.push('personalization')
 
-        // Store content chunk with enhanced metadata
-        console.log(`Storing chunk for ${content.source_type} ${content.id} with embedding length: ${embedding.length}`);
-        
-        // Create unique chunk ID to avoid foreign key constraints
-        const chunkId = crypto.randomUUID();
-        
-        const { error: chunkError } = await supabase
-          .from('content_chunks')
-          .upsert({
-            id: chunkId,
-            source_id: content.id,
-            content: content.content,
-            title: content.title,
-            url: content.url,
-            embedding: embedding,
-            chunk_index: 0,
-            token_count: Math.ceil((content.content?.length || 0) / 4),
-            content_type: contentType,
-            importance_score: importanceScore,
-            tags: tags,
-            category: isFlexContent ? 'flex_platform' : 'general',
-            knowledge_level: knowledgeLevel,
-            source_context: {
-              source_type: content.source_type,
-              file_type: content.mime_type || content.file_type,
-              original_length: content.content.length,
-              processed_at: new Date().toISOString()
-            },
-            last_updated: new Date().toISOString()
-          });
-
-        if (chunkError) {
-          throw new Error(`Database upsert error: ${JSON.stringify(chunkError)}`);
+    // Enhanced categorization logic
+    const analyzeContent = (content) => {
+      const text = content.content.toLowerCase();
+      const title = (content.title || '').toLowerCase();
+      
+      // Primary categorization
+      let primaryCategory = 'general';
+      let subCategory = 'uncategorized';
+      let userRole = 'general';
+      let relevanceTags = [];
+      let keywords = [];
+      
+      // WhatsApp Business API categorization
+      if (text.includes('whatsapp') || text.includes('meta') || text.includes('graph api')) {
+        primaryCategory = 'whatsapp_business';
+        if (text.includes('template')) subCategory = 'templates';
+        else if (text.includes('webhook') || text.includes('callback')) subCategory = 'webhooks';
+        else if (text.includes('message') || text.includes('send')) subCategory = 'messaging';
+        else if (text.includes('contact') || text.includes('phone')) subCategory = 'contacts';
+        else if (text.includes('media') || text.includes('image') || text.includes('video')) subCategory = 'media';
+        relevanceTags.push('api', 'messaging', 'business');
+        keywords.push('whatsapp', 'api', 'business');
+      }
+      
+      // flEX Platform specific
+      if (text.includes('flex') || title.includes('flex')) {
+        primaryCategory = 'flex_platform';
+        if (text.includes('template') || text.includes('editor')) subCategory = 'templates';
+        else if (text.includes('campaign') || text.includes('send campaign')) subCategory = 'campaigns';
+        else if (text.includes('journey') || text.includes('automation')) subCategory = 'journeys';
+        else if (text.includes('contact') || text.includes('audience')) subCategory = 'contacts';
+        else if (text.includes('analytic') || text.includes('performance')) subCategory = 'analytics';
+        else if (text.includes('navigation') || text.includes('menu')) subCategory = 'navigation';
+        relevanceTags.push('platform', 'ui', 'features');
+        keywords.push('flex', 'platform', 'editor');
+      }
+      
+      // API Documentation
+      if (text.includes('api') || text.includes('endpoint') || text.includes('response')) {
+        primaryCategory = 'api_documentation';
+        if (text.includes('webhook')) subCategory = 'webhooks';
+        else if (text.includes('auth') || text.includes('token')) subCategory = 'authentication';
+        else if (text.includes('message')) subCategory = 'messaging';
+        userRole = 'developer';
+        relevanceTags.push('technical', 'integration', 'reference');
+        keywords.push('api', 'endpoint', 'documentation');
+      }
+      
+      // Video content detection
+      if (content.source_type === 'uploaded_file' && (content.mime_type?.includes('video') || title.includes('transcript'))) {
+        if (!primaryCategory || primaryCategory === 'general') primaryCategory = 'tutorials';
+        subCategory = 'video_guides';
+        userRole = 'beginner';
+        relevanceTags.push('tutorial', 'visual', 'guide');
+        keywords.push('tutorial', 'guide', 'video');
+      }
+      
+      // Determine user role if not set
+      if (userRole === 'general') {
+        if (text.includes('developer') || text.includes('code') || text.includes('integration')) {
+          userRole = 'developer';
+        } else if (text.includes('admin') || text.includes('configure') || text.includes('setup')) {
+          userRole = 'admin';
+        } else if (text.includes('campaign') || text.includes('marketing') || text.includes('message')) {
+          userRole = 'marketer';
+        } else {
+          userRole = 'end_user';
         }
+      }
+      
+      return { primaryCategory, subCategory, userRole, relevanceTags, keywords };
+    };
 
-        console.log(`Successfully processed ${content.source_type} ${content.id}`);
+    const analysis = analyzeContent(content);
+    
+    // Store content chunk with enhanced metadata
+    console.log(`Storing chunk for ${content.source_type} ${content.id} with embedding length: ${embedding.length}`);
+    
+    // Create unique chunk ID to avoid foreign key constraints
+    const chunkId = crypto.randomUUID();
+    
+    const { error: chunkError } = await supabase
+      .from('content_chunks')
+      .upsert({
+        id: chunkId,
+        source_id: content.id,
+        content: content.content,
+        title: content.title,
+        url: content.url,
+        embedding: embedding,
+        chunk_index: 0,
+        token_count: Math.ceil((content.content?.length || 0) / 4),
+        content_type: contentType,
+        importance_score: importanceScore,
+        tags: tags,
+        category: isFlexContent ? 'flex_platform' : 'general',
+        knowledge_level: knowledgeLevel,
+        source_context: {
+          source_type: content.source_type,
+          file_type: content.mime_type || content.file_type,
+          original_length: content.content.length,
+          processed_at: new Date().toISOString()
+        },
+        last_updated: new Date().toISOString()
+      });
+
+    if (chunkError) {
+      throw new Error(`Database upsert error: ${JSON.stringify(chunkError)}`);
+    }
+
+    // Also store in master knowledge base with enhanced categorization
+    const { error: masterError } = await supabase
+      .from('master_knowledge_base')
+      .upsert({
+        id: crypto.randomUUID(),
+        source_id: content.id,
+        source_type: content.source_type,
+        source_table: content.source_table,
+        title: content.title || 'Untitled',
+        content: content.content,
+        url: content.url,
+        primary_category: analysis.primaryCategory,
+        sub_category: analysis.subCategory,
+        content_type: contentType,
+        user_role: analysis.userRole,
+        importance_score: importanceScore,
+        knowledge_level: knowledgeLevel,
+        relevance_tags: analysis.relevanceTags,
+        keywords: analysis.keywords,
+        embedding: embedding,
+        token_count: Math.ceil((content.content?.length || 0) / 4),
+        metadata: {
+          original_tags: tags,
+          file_type: content.mime_type || content.file_type,
+          original_length: content.content.length,
+          processed_at: new Date().toISOString(),
+          analysis_version: '1.0'
+        }
+      });
+
+    if (masterError) {
+      console.warn(`Failed to store in master knowledge base: ${masterError.message}`);
+    }
+
+    console.log(`Successfully processed ${content.source_type} ${content.id} and stored in master knowledge base`);
         return true;
 
       } catch (error) {
