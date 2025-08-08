@@ -6,13 +6,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Bot, MessageSquare, Send, Settings, Trash2, User } from 'lucide-react';
+import { AlertCircle, MessageSquare, Send, Settings, Trash2, User } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlerService } from '@/services/CrawlerService';
 import { AISpecializationService } from '@/services/AISpecializationService';
+import womanAvatar from '@/assets/woman-avatar.jpg';
 
 // Define the ChatMessage interface
 interface ChatMessage {
@@ -158,7 +159,7 @@ const ChatTesting: React.FC = () => {
       <Card className="flex-1 flex flex-col h-full overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bot className="w-6 h-6 text-primary" />
+            <img src={womanAvatar} alt="LEXI AI Assistant" className="w-6 h-6 rounded-full object-cover" />
             <div>
               <h3 className="text-lg font-semibold">LEXI</h3>
               <p className="text-sm text-muted-foreground">Ask me anything!</p>
@@ -232,8 +233,8 @@ const ChatTesting: React.FC = () => {
                   className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {message.type === 'bot' && (
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-primary-foreground" />
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                      <img src={womanAvatar} alt="LEXI" className="w-full h-full object-cover" />
                     </div>
                   )}
                   
@@ -262,8 +263,8 @@ const ChatTesting: React.FC = () => {
               
               {isTyping && (
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-4 h-4 text-primary-foreground" />
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                    <img src={womanAvatar} alt="LEXI" className="w-full h-full object-cover" />
                   </div>
                   <div className="bg-muted rounded-lg p-3">
                     <div className="flex space-x-1">
