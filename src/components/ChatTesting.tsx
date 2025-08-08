@@ -159,7 +159,7 @@ const ChatTesting: React.FC = () => {
       <Card className="flex-1 flex flex-col h-full overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={womanAvatar} alt="LEXI AI Assistant" className="w-6 h-6 rounded-full object-cover" />
+            <img src={womanAvatar} alt="LEXI AI Assistant" className="w-10 h-10 rounded-full object-cover" />
             <div>
               <h3 className="text-lg font-semibold">LEXI</h3>
               <p className="text-sm text-muted-foreground">Ask me anything!</p>
