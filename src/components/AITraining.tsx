@@ -8,20 +8,26 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { CrawlerService } from "@/services/CrawlerService";
 import { AITrainingService, TrainingSession } from "@/services/AITrainingService";
+import { FileUploadService } from "@/services/FileUploadService";
 
 export function AITraining() {
   const [currentTraining, setCurrentTraining] = useState<TrainingSession | null>(null);
   const [trainingHistory, setTrainingHistory] = useState<TrainingSession[]>([]);
   const [selectedSources, setSelectedSources] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [uploadedFiles, setUploadedFiles] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
     loadTrainingData();
+  }, []);
+
+  // Separate useEffect for polling training progress
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
     
-    // Poll for current training progress
-    const interval = setInterval(async () => {
-      if (currentTraining && currentTraining.status === 'processing') {
+    if (currentTraining && (currentTraining.status === 'pending' || currentTraining.status === 'processing')) {
+      interval = setInterval(async () => {
         try {
           const updated = await AITrainingService.getSessionProgress(currentTraining.id);
           if (updated) {
@@ -30,32 +36,48 @@ export function AITraining() {
             if (updated.status === 'completed') {
               toast({
                 title: "Training completed!",
-                description: `AI successfully trained on ${updated.total_content} sources`,
+                description: `AI successfully trained on ${updated.processed_content} content pieces`,
               });
-              loadTrainingData(); // Refresh history
+              // Refresh training history when completed
+              const sessions = await AITrainingService.getTrainingSessions();
+              setTrainingHistory(sessions);
+              setCurrentTraining(null); // Clear current training
             } else if (updated.status === 'failed') {
               toast({
                 title: "Training failed",
                 description: updated.error_message || "Training encountered an error",
                 variant: "destructive"
               });
+              setCurrentTraining(null); // Clear failed training
             }
           }
         } catch (error) {
           console.error('Failed to get training progress:', error);
         }
-      }
-    }, 2000);
+      }, 2000);
+    }
 
-    return () => clearInterval(interval);
-  }, [currentTraining, toast]);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [currentTraining?.id, currentTraining?.status, toast]);
 
   const loadTrainingData = async () => {
     try {
-      // Get selected sources count
-      const pages = await CrawlerService.getScrapedPages();
-      setSelectedSources(pages.length > 0 ? Math.ceil(pages.length / 5) : 0);
+      // Get both scraped pages and uploaded files
+      const [pages, files] = await Promise.all([
+        CrawlerService.getScrapedPages(),
+        FileUploadService.getUploadedFiles()
+      ]);
+      
+      // Count files with content for training
+      const validFiles = files.filter(file => file.content && file.content.trim().length > 0);
+      
       setTotalPages(pages.length);
+      setUploadedFiles(validFiles.length);
+      setSelectedSources(pages.length + validFiles.length);
 
       // Load real training history
       const sessions = await AITrainingService.getTrainingSessions();
@@ -169,9 +191,19 @@ export function AITraining() {
               <div className="text-sm text-muted-foreground">Content sources selected</div>
             </div>
             
-            <div className="text-center">
-              <div className="text-xl font-semibold">{totalPages}</div>
-              <div className="text-sm text-muted-foreground">Total pages to process</div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Scraped pages</span>
+                <span>{totalPages}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Uploaded files</span>
+                <span>{uploadedFiles}</span>
+              </div>
+              <div className="flex justify-between text-sm font-medium border-t pt-2">
+                <span>Total content pieces</span>
+                <span>{totalPages + uploadedFiles}</span>
+              </div>
             </div>
 
             {selectedSources === 0 && (
