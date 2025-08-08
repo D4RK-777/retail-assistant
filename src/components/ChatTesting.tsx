@@ -221,7 +221,7 @@ const ChatTesting: React.FC = () => {
             <div className="space-y-4">
               {messages.length === 0 && (
                 <div className="text-center text-muted-foreground py-8">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <img src={womanAvatar} alt="LEXI" className="w-20 h-20 mx-auto mb-4 rounded-full object-cover opacity-75" />
                   <p>Start a conversation with LEXI!</p>
                   <p className="text-sm mt-2">Ask questions and get intelligent responses.</p>
                 </div>
