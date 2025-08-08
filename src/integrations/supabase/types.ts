@@ -17,35 +17,47 @@ export type Database = {
       ai_training_sessions: {
         Row: {
           completed_at: string | null
+          content_sources: Json | null
           created_at: string
+          embedding_model: string | null
           error_message: string | null
           id: string
+          knowledge_coverage: Json | null
           processed_content: number | null
           progress: number | null
           status: string
           total_content: number | null
+          training_metrics: Json | null
           type: string
         }
         Insert: {
           completed_at?: string | null
+          content_sources?: Json | null
           created_at?: string
+          embedding_model?: string | null
           error_message?: string | null
           id?: string
+          knowledge_coverage?: Json | null
           processed_content?: number | null
           progress?: number | null
           status?: string
           total_content?: number | null
+          training_metrics?: Json | null
           type: string
         }
         Update: {
           completed_at?: string | null
+          content_sources?: Json | null
           created_at?: string
+          embedding_model?: string | null
           error_message?: string | null
           id?: string
+          knowledge_coverage?: Json | null
           processed_content?: number | null
           progress?: number | null
           status?: string
           total_content?: number | null
+          training_metrics?: Json | null
           type?: string
         }
         Relationships: []
@@ -123,39 +135,99 @@ export type Database = {
       }
       content_chunks: {
         Row: {
+          category: string | null
           chunk_index: number | null
           content: string | null
+          content_type: string | null
           created_at: string
           embedding: string | null
           id: string
+          importance_score: number | null
+          knowledge_level: string | null
+          last_updated: string | null
+          source_context: Json | null
           source_id: string | null
+          tags: string[] | null
           title: string | null
           token_count: number | null
           url: string | null
         }
         Insert: {
+          category?: string | null
           chunk_index?: number | null
           content?: string | null
+          content_type?: string | null
           created_at?: string
           embedding?: string | null
           id?: string
+          importance_score?: number | null
+          knowledge_level?: string | null
+          last_updated?: string | null
+          source_context?: Json | null
           source_id?: string | null
+          tags?: string[] | null
           title?: string | null
           token_count?: number | null
           url?: string | null
         }
         Update: {
+          category?: string | null
           chunk_index?: number | null
           content?: string | null
+          content_type?: string | null
           created_at?: string
           embedding?: string | null
           id?: string
+          importance_score?: number | null
+          knowledge_level?: string | null
+          last_updated?: string | null
+          source_context?: Json | null
           source_id?: string | null
+          tags?: string[] | null
           title?: string | null
           token_count?: number | null
           url?: string | null
         }
         Relationships: []
+      }
+      content_topic_mapping: {
+        Row: {
+          content_chunk_id: string | null
+          created_at: string | null
+          id: string
+          relevance_score: number | null
+          topic_id: string | null
+        }
+        Insert: {
+          content_chunk_id?: string | null
+          created_at?: string | null
+          id?: string
+          relevance_score?: number | null
+          topic_id?: string | null
+        }
+        Update: {
+          content_chunk_id?: string | null
+          created_at?: string | null
+          id?: string
+          relevance_score?: number | null
+          topic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_topic_mapping_content_chunk_id_fkey"
+            columns: ["content_chunk_id"]
+            isOneToOne: false
+            referencedRelation: "content_chunks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_topic_mapping_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       experiences: {
         Row: {
@@ -259,6 +331,45 @@ export type Database = {
         }
         Relationships: []
       }
+      flex_usage_analytics: {
+        Row: {
+          action_taken: string
+          ai_assistance_provided: boolean | null
+          created_at: string | null
+          feature_accessed: string
+          feature_context: Json | null
+          help_requested: boolean | null
+          id: string
+          success_outcome: boolean | null
+          time_spent_seconds: number | null
+          user_session_id: string
+        }
+        Insert: {
+          action_taken: string
+          ai_assistance_provided?: boolean | null
+          created_at?: string | null
+          feature_accessed: string
+          feature_context?: Json | null
+          help_requested?: boolean | null
+          id?: string
+          success_outcome?: boolean | null
+          time_spent_seconds?: number | null
+          user_session_id: string
+        }
+        Update: {
+          action_taken?: string
+          ai_assistance_provided?: boolean | null
+          created_at?: string | null
+          feature_accessed?: string
+          feature_context?: Json | null
+          help_requested?: boolean | null
+          id?: string
+          success_outcome?: boolean | null
+          time_spent_seconds?: number | null
+          user_session_id?: string
+        }
+        Relationships: []
+      }
       form_submissions: {
         Row: {
           created_at: string
@@ -297,6 +408,80 @@ export type Database = {
           your_text_or_idea?: string | null
         }
         Relationships: []
+      }
+      knowledge_gaps: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          frequency_asked: number | null
+          has_good_answer: boolean | null
+          id: string
+          notes: string | null
+          priority_level: number | null
+          question_text: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          frequency_asked?: number | null
+          has_good_answer?: boolean | null
+          id?: string
+          notes?: string | null
+          priority_level?: number | null
+          question_text: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          frequency_asked?: number | null
+          has_good_answer?: boolean | null
+          id?: string
+          notes?: string | null
+          priority_level?: number | null
+          question_text?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_topics: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          importance_level: number | null
+          parent_topic_id: string | null
+          topic_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          importance_level?: number | null
+          parent_topic_id?: string | null
+          topic_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          importance_level?: number | null
+          parent_topic_id?: string | null
+          topic_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_topics_parent_topic_id_fkey"
+            columns: ["parent_topic_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       master_templates: {
         Row: {
@@ -1233,6 +1418,51 @@ export type Database = {
           slug?: string
           url_type?: string | null
           visit_count?: number
+        }
+        Relationships: []
+      }
+      user_ai_interactions: {
+        Row: {
+          ai_response: string
+          context_used: Json | null
+          created_at: string | null
+          follow_up_questions: string[] | null
+          id: string
+          question: string
+          response_quality_rating: number | null
+          response_time_ms: number | null
+          session_id: string
+          updated_at: string | null
+          user_id: string | null
+          was_helpful: boolean | null
+        }
+        Insert: {
+          ai_response: string
+          context_used?: Json | null
+          created_at?: string | null
+          follow_up_questions?: string[] | null
+          id?: string
+          question: string
+          response_quality_rating?: number | null
+          response_time_ms?: number | null
+          session_id: string
+          updated_at?: string | null
+          user_id?: string | null
+          was_helpful?: boolean | null
+        }
+        Update: {
+          ai_response?: string
+          context_used?: Json | null
+          created_at?: string | null
+          follow_up_questions?: string[] | null
+          id?: string
+          question?: string
+          response_quality_rating?: number | null
+          response_time_ms?: number | null
+          session_id?: string
+          updated_at?: string | null
+          user_id?: string | null
+          was_helpful?: boolean | null
         }
         Relationships: []
       }
