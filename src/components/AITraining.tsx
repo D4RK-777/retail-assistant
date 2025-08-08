@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { CrawlerService } from "@/services/CrawlerService";
 import { AITrainingService, TrainingSession } from "@/services/AITrainingService";
 import { FileUploadService } from "@/services/FileUploadService";
@@ -22,15 +23,50 @@ export function AITraining() {
     loadTrainingData();
   }, []);
 
-  // Separate useEffect for polling training progress
+  // Separate useEffect for polling training progress with timeout detection
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
+    let timeoutCounter = 0;
     
     if (currentTraining && (currentTraining.status === 'pending' || currentTraining.status === 'processing')) {
       interval = setInterval(async () => {
         try {
           const updated = await AITrainingService.getSessionProgress(currentTraining.id);
           if (updated) {
+            // Reset timeout counter if progress changed
+            if (updated.progress !== currentTraining.progress || updated.processed_content !== currentTraining.processed_content) {
+              timeoutCounter = 0;
+            } else {
+              timeoutCounter++;
+            }
+            
+            // If no progress for 10 polls (20 seconds), consider it stuck
+            if (timeoutCounter >= 10 && updated.status === 'processing') {
+              console.log('Training appears stuck, marking as failed');
+              
+              // Mark as failed due to timeout
+              await supabase
+                .from('ai_training_sessions')
+                .update({ 
+                  status: 'failed',
+                  completed_at: new Date().toISOString(),
+                  error_message: `Training timed out - no progress for 20+ seconds. Processed ${updated.processed_content}/${updated.total_content} items.`
+                })
+                .eq('id', currentTraining.id);
+              
+              setCurrentTraining(null);
+              toast({
+                title: "Training timed out",
+                description: `Training stopped due to timeout. Processed ${updated.processed_content}/${updated.total_content} items.`,
+                variant: "destructive"
+              });
+              
+              // Refresh history
+              const sessions = await AITrainingService.getTrainingSessions();
+              setTrainingHistory(sessions);
+              return;
+            }
+            
             setCurrentTraining(updated);
             
             if (updated.status === 'completed') {
@@ -62,7 +98,7 @@ export function AITraining() {
         clearInterval(interval);
       }
     };
-  }, [currentTraining?.id, currentTraining?.status, toast]);
+  }, [currentTraining?.id, currentTraining?.status, currentTraining?.progress, currentTraining?.processed_content, toast]);
 
   const loadTrainingData = async () => {
     try {
@@ -145,6 +181,43 @@ export function AITraining() {
       toast({
         title: "Failed to start training",
         description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const cancelTraining = async () => {
+    if (!currentTraining) return;
+    
+    try {
+      // Mark session as cancelled in database
+      const { error } = await supabase
+        .from('ai_training_sessions')
+        .update({ 
+          status: 'failed',
+          completed_at: new Date().toISOString(),
+          error_message: 'Training cancelled by user'
+        })
+        .eq('id', currentTraining.id);
+
+      if (error) throw error;
+
+      setCurrentTraining(null);
+      
+      toast({
+        title: "Training cancelled",
+        description: "The training session has been stopped",
+      });
+      
+      // Refresh history
+      const sessions = await AITrainingService.getTrainingSessions();
+      setTrainingHistory(sessions);
+      
+    } catch (error) {
+      console.error('Failed to cancel training:', error);
+      toast({
+        title: "Failed to cancel training",
+        description: "Please try again",
         variant: "destructive"
       });
     }
@@ -242,11 +315,21 @@ export function AITraining() {
           <CardContent className="space-y-4">
             {currentTraining ? (
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 bg-primary rounded-full animate-pulse"></div>
-                  <span className="font-medium">
-                    {currentTraining.type === "full" ? "Full" : "Incremental"} training in progress
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 bg-primary rounded-full animate-pulse"></div>
+                    <span className="font-medium">
+                      {currentTraining.type === "full" ? "Full" : "Incremental"} training in progress
+                    </span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={cancelTraining}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    Cancel
+                  </Button>
                 </div>
                 
                 <div className="space-y-2">
