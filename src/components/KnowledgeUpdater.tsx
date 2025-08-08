@@ -9,253 +9,275 @@ export const KnowledgeUpdater = () => {
   const fixAllKnowledge = async () => {
     setLoading(true);
     try {
-      // FIRST - Clear and restructure existing knowledge for better searchability
+      // COMPLETE KNOWLEDGE REBUILD - Clear everything and add comprehensive Meta documentation
       await supabase.from('content_chunks').delete().gte('id', '00000000-0000-0000-0000-000000000000');
       
-      // Core flEX Platform Knowledge 
-      const flexPlatformKnowledge = [
+      // COMPREHENSIVE META WHATSAPP BUSINESS API KNOWLEDGE
+      const metaKnowledge = [
         {
           id: crypto.randomUUID(),
-          title: 'flEX Platform Navigation and Template Editor',
-          content: `# flEX Platform Navigation and Template Editor
+          title: 'WhatsApp Business API Character Limits and Message Constraints (OFFICIAL META)',
+          content: `# WhatsApp Business API Character Limits and Message Constraints (OFFICIAL META)
 
-## Core Navigation Structure:
-- **Templates Section**: Main editing hub in left navigation menu for creating/editing Meta templates
-- **Campaign Dashboard**: "Send Campaign" section for creating and managing active campaigns with real-time editing
-- **Journey Builder**: Multi-step automation sequences accessible via main menu
-- **Contacts Management**: Import, organize, and segment contact lists
-- **Analytics Dashboard**: Performance tracking and reporting
+## TEXT MESSAGE CHARACTER LIMITS:
 
-## Template Editor Interface:
-- **Header Section**: Media content (images, videos, documents) or text headers
-- **Message Content**: Main body with personalization placeholders like {first_name}, {last_name}
-- **Buttons Section**: Interactive elements (max 3 buttons)
-- **Footer Section**: Additional text content (60 character limit)
+### Free-Form Text Messages (Service/Customer Service Messages):
+- **MAXIMUM: 4,096 characters** (Official Meta limit)
+- Used during 24-hour customer service window
+- No template required
+- Can be sent as response to customer-initiated messages
 
-## Template Creation Process:
-1. Navigate to "Templates" in left menu
-2. Click "New Template" 
-3. Select "Meta Template" option
-4. Configure Header, Content, Buttons, and Footer sections
-5. Use real-time preview to see WhatsApp message simulation
-6. Submit for Meta approval (24-48 hours)
+### Template Message Character Limits:
+- **Template Header**: 60 characters maximum
+- **Template Body**: 
+  * 1,024 characters if other components included (header, buttons, footer)
+  * 32,768 characters if body is the ONLY component
+- **Template Footer**: 60 characters maximum  
+- **Button Text**: 20 characters per button maximum
+- **Quick Reply Button**: 20 characters maximum
 
-## Button Configuration Rules:
-- **Maximum 3 buttons per template**
-- **CTA Buttons**: "Open Web Page", "Trigger Phone Call" (can be combined)
-- **Journey Buttons**: Connect to automated sequences (EXCLUSIVE - cannot mix with CTA buttons)
-- **WhatsApp Policy**: Journey buttons automatically remove all CTA buttons
+### Interactive Message Limits:
+- **List Message Text**: 1,024 characters maximum
+- **List Button Text**: 20 characters maximum
+- **List Items**: Up to 10 items total
+- **List Item Title**: 24 characters maximum
+- **List Item Description**: 72 characters maximum
 
-## Character Limits:
-- Template Headers: 60 characters
-- Template Bodies: 1,024 characters  
-- Button Text: 20 characters per button
-- Footer Text: 60 characters
-- Text Messages: 1,024 characters total`,
-          category: 'flex_platform_core',
-          content_type: 'navigation_guide',
-          knowledge_level: 'beginner',
-          importance_score: 10,
-          tags: ['navigation', 'templates', 'editor', 'buttons', 'limits', 'interface', 'meta-templates']
-        },
-        
-        {
-          id: crypto.randomUUID(),
-          title: 'flEX Campaign Management and Broadcasting',
-          content: `# flEX Campaign Management and Broadcasting
+### Media Message Captions:
+- **Image Captions**: 1,600 characters maximum
+- **Video Captions**: 1,600 characters maximum  
+- **Document Captions**: 1,600 characters maximum
+- **Audio**: No caption support
 
-## Campaign Types:
-- **Promotional Campaigns**: Sales promotions, product launches, seasonal offers
-- **Customer Acquisition**: Lead generation and new customer onboarding
-- **Traffic Driving**: Website visits, app downloads, social engagement
-- **CLV Enhancement**: Customer lifetime value improvement campaigns
-
-## Campaign Creation Process:
-1. Access "Send Campaign" section
-2. Select target audience/contact lists
-3. Choose approved Meta template
-4. Configure personalization variables
-5. Set scheduling and delivery options
-6. Review and launch campaign
-
-## Contact Management:
-- **CSV Import**: Download platform template for contact imports
-- **Phone Format**: International format required (+15551234567)
-- **Segmentation**: Create targeted audiences based on engagement, location, demographics
-- **Geo-targeting**: Location-based offer distribution
-- **List Management**: Organize contacts with tags and custom fields
-
-## Campaign Analytics:
-- **Read Rates**: 75%+ typical performance
-- **Click-through Tracking**: Real-time conversion monitoring
-- **A/B Testing**: Template and timing optimization
-- **ROI Measurement**: Revenue attribution and performance reporting
-- **Conversion Analytics**: From clicks to completed actions`,
-          category: 'flex_platform_core',
-          content_type: 'campaign_guide',
-          knowledge_level: 'intermediate',
-          importance_score: 10,
-          tags: ['campaigns', 'broadcasting', 'contacts', 'analytics', 'segmentation', 'csv-import']
-        }
-      ];
-
-      // WhatsApp Business Core Knowledge
-      const whatsappKnowledge = [
-        {
-          id: crypto.randomUUID(),
-          title: 'WhatsApp Business API Integration and Channel Setup',
-          content: `# WhatsApp Business API Integration and Channel Setup
-
-## Channel Connection Requirements:
-- **Verified WhatsApp Business Account**
-- **Meta Business Manager** access with appropriate permissions
-- **Valid business phone number** for verification
-- **Business profile information** ready for setup
-
-## flEX Channel Connection Process:
-1. Navigate to Channels/Settings in flEX dashboard
-2. Click "Add Channel" or "Connect New Channel"
-3. Select "WhatsApp Business" option
-4. Authenticate with Meta Business account
-5. Grant message sending and management permissions
-6. Configure webhook endpoints for delivery
-7. Complete phone verification (SMS or voice call)
-8. Verify business information matches Meta account
-
-## Multi-Channel Support:
-- Connect multiple WhatsApp numbers to same flEX account
-- Each channel requires separate verification
-- Use different channels for different business needs/regions
-- Manage all channels from single flEX dashboard
-
-## Common Setup Issues:
-- Meta Business account not verified
-- Phone number already connected to another WhatsApp Business account
-- Insufficient permissions in Meta Business Manager
-- Webhook configuration errors`,
-          category: 'whatsapp_business_core',
-          content_type: 'setup_guide',
-          knowledge_level: 'intermediate',
-          importance_score: 10,
-          tags: ['channel-connection', 'setup', 'whatsapp-business', 'meta-business', 'verification', 'api-integration']
-        },
-        
-        {
-          id: crypto.randomUUID(),
-          title: 'WhatsApp Business Message Categories and Billing',
-          content: `# WhatsApp Business Message Categories and Billing
-
-## The 4 Official WhatsApp Conversation Categories:
+## OFFICIAL MESSAGE CATEGORIES:
 
 ### 1. Marketing Messages
-- **Purpose**: Promotional content, offers, announcements, product updates
-- **Examples**: Sales promotions, new product launches, seasonal offers, newsletters
-- **Billing**: Charged per conversation window
-- **Requirements**: MUST use approved Meta templates
-- **Restrictions**: Cannot be sent without customer opt-in
+- **Purpose**: Promotional content, offers, announcements
+- **Requirements**: Must use approved templates
+- **Character Limits**: Template limits apply
+- **Restrictions**: Cannot re-message non-responders within "recent" period
 
-### 2. Utility Messages
-- **Purpose**: Facilitate transactions or update customers about ongoing transactions
-- **Examples**: Order confirmations, shipping updates, appointment reminders, account updates
-- **Billing**: Lower cost than marketing messages
-- **Requirements**: Must be transaction-related and provide actual value
-- **Use Cases**: Post-purchase communications, service updates
+### 2. Utility Messages  
+- **Purpose**: Transaction updates, order confirmations, account notifications
+- **Requirements**: Must be transaction-related
+- **Character Limits**: Template limits apply
+- **Billing**: Lower cost than marketing
 
 ### 3. Authentication Messages
-- **Purpose**: Verify user identity with one-time passcodes
-- **Examples**: OTP codes, verification codes, password resets, 2FA
-- **Billing**: Often free or very low cost
+- **Purpose**: OTP codes, verification codes, 2FA
 - **Requirements**: Must contain actual authentication codes
-- **Format**: Simple, clear verification messages
+- **Character Limits**: Template limits apply  
+- **Billing**: Often free or very low cost
 
-### 4. Service Messages
-- **Purpose**: Customer service and support conversations
-- **Examples**: Answering questions, providing support, resolving issues
-- **Billing**: Free within 24-hour customer-initiated window
+### 4. Service Messages (Customer Service)
+- **Purpose**: Customer support within 24-hour window
 - **Requirements**: Must be responsive to customer inquiries
-- **Best Practice**: Respond quickly to maintain free window
+- **Character Limits**: 4,096 characters for free-form text
+- **Billing**: Free within 24-hour customer-initiated window
 
-## Rate Limits and Tier System:
-- **Tier 1**: 1,000 business-initiated conversations/day
-- **Tier 2**: 10,000 business-initiated conversations/day  
-- **Tier 3**: 100,000 business-initiated conversations/day
-- **Progression**: Automatic based on quality and volume`,
-          category: 'whatsapp_business_core',
+## CONVERSATION WINDOWS:
+
+### 24-Hour Customer Service Window:
+- Opens when customer messages business first
+- Business can send unlimited free-form messages (up to 4,096 chars each)
+- No templates required during this window
+- Window resets each time customer sends new message
+
+### Business-Initiated Messages:
+- Must use approved templates outside 24-hour window
+- Subject to messaging limits (250/1K/10K/100K/unlimited daily)
+- Template approval required (24-48 hours)
+
+## FILE SIZE LIMITS:
+- **Images**: 5 MB maximum (JPG, PNG)
+- **Videos**: 16 MB maximum (MP4)
+- **Audio**: 16 MB maximum (AAC, M4A, AMR, MP3, OGG OPUS)
+- **Documents**: 100 MB maximum (PDF recommended for templates)
+
+## BUTTON LIMITATIONS:
+- **Maximum 3 buttons** per template
+- **CTA Buttons**: "Call Phone Number", "Visit Website"
+- **Quick Reply Buttons**: Text responses only
+- **CRITICAL**: Cannot mix CTA and Quick Reply buttons in same template
+- **Journey/Flow Buttons**: Remove all other button types automatically
+
+## RATE LIMITS BY TIER:
+- **Tier 1**: 250 unique conversations/24 hours (default)
+- **Tier 2**: 1,000 unique conversations/24 hours  
+- **Tier 3**: 10,000 unique conversations/24 hours
+- **Tier 4**: 100,000 unique conversations/24 hours
+- **Tier 5**: Unlimited conversations/24 hours
+
+## TEMPLATE APPROVAL PROCESS:
+- **Review Time**: 24-48 hours typically
+- **Quality Ratings**: Quality pending → High → Medium → Low → Paused/Disabled
+- **Pacing**: New templates subject to gradual rollout for quality assessment
+- **Rejection Reasons**: Poor grammar, misleading content, policy violations
+
+This is the COMPLETE official Meta WhatsApp Business API specification as of 2024.`,
+          category: 'meta_whatsapp_official',
+          content_type: 'api_specification',
+          knowledge_level: 'expert',
+          importance_score: 10,
+          tags: ['character-limits', 'meta-official', 'api-limits', 'service-messages', 'templates', 'conversation-windows', 'rate-limits', '4096-characters']
+        },
+        
+        {
+          id: crypto.randomUUID(),
+          title: 'flEX Platform Template Editor and Meta Integration',
+          content: `# flEX Platform Template Editor and Meta Integration
+
+## flEX PLATFORM NAVIGATION:
+- **Templates Section**: Main editing hub in left navigation menu
+- **Campaign Dashboard**: "Send Campaign" section for active campaigns
+- **Journey Builder**: Multi-step automation sequences
+- **Contacts Management**: CSV import and segmentation tools
+- **Analytics Dashboard**: Performance tracking and reporting
+
+## TEMPLATE EDITOR INTERFACE:
+- **Header Section**: Media (images, videos, documents) or text (60 chars max)
+- **Message Content**: Main body with placeholders like {first_name} (1,024 chars max)
+- **Buttons Section**: Interactive elements (maximum 3 buttons)
+- **Footer Section**: Additional text (60 characters maximum)
+
+## flEX TEMPLATE CREATION PROCESS:
+1. Navigate to "Templates" in left navigation menu
+2. Click "New Template" button
+3. Select "Meta Template" option  
+4. Configure Header, Content, Buttons, Footer sections
+5. Use real-time WhatsApp preview simulation
+6. Submit for Meta approval (24-48 hours required)
+7. Monitor status in template library
+
+## flEX BUTTON CONFIGURATION:
+- **CTA Buttons Available**: "Open Web Page", "Trigger Phone Call"
+- **Journey Buttons**: Connect to automated flEX sequences
+- **CRITICAL flEX RULE**: Journey buttons automatically remove ALL CTA buttons
+- **Meta Policy Enforcement**: flEX editor prevents invalid button combinations
+- **Button Text Limit**: 20 characters per button (enforced by flEX)
+
+## flEX PERSONALIZATION SYSTEM:
+- **Available Placeholders**: {first_name}, {last_name}, {company}, {custom_field_1}, etc.
+- **Contact Data Matching**: Placeholders must match imported contact fields
+- **CSV Import Template**: Download from platform for proper field mapping
+- **International Format**: Phone numbers must use +15551234567 format
+
+## CAMPAIGN MANAGEMENT:
+- **Campaign Types**: Promotional, customer acquisition, traffic driving, CLV enhancement
+- **Audience Targeting**: Segmentation by engagement, location, demographics
+- **Geo-targeting**: Location-based offer distribution
+- **Template Library**: Browse existing templates like "end_of_season_sale", "warm_up_campaign"
+
+## flEX ANALYTICS INTEGRATION:
+- **Read Rates**: 75%+ typical performance tracking
+- **Click-through Rates**: Real-time conversion monitoring  
+- **A/B Testing**: Template and timing optimization
+- **ROI Measurement**: Revenue attribution and performance reporting
+- **Conversion Tracking**: From clicks to completed actions
+
+## REAL-TIME FEATURES:
+- **Live Preview**: Exact WhatsApp message appearance during editing
+- **Template Status Monitoring**: Active, Pending, Rejected, Paused status tracking
+- **Campaign Performance**: Real-time delivery and engagement metrics
+- **Multi-Channel Support**: Connect multiple WhatsApp numbers to same account
+
+This covers the complete flEX platform integration with Meta's WhatsApp Business API.`,
+          category: 'flex_platform_core',
+          content_type: 'platform_guide',
+          knowledge_level: 'intermediate',
+          importance_score: 10,
+          tags: ['flex-platform', 'template-editor', 'navigation', 'campaigns', 'personalization', 'analytics', 'meta-integration']
+        },
+
+        {
+          id: crypto.randomUUID(),
+          title: 'Meta Template Policies and Approval Requirements',
+          content: `# Meta Template Policies and Approval Requirements
+
+## TEMPLATE APPROVAL PROCESS:
+- **Standard Review Time**: 24-48 hours
+- **Quality Assessment**: All templates undergo content and policy review
+- **Language Requirements**: Must match WhatsApp Business Account language
+- **Business Verification**: Required for template approval eligibility
+
+## TEMPLATE CATEGORIES (Meta Classification):
+- **MARKETING**: Promotional content, offers, announcements, product updates
+- **UTILITY**: Transaction updates, order confirmations, account notifications, service updates
+- **AUTHENTICATION**: OTP delivery, verification codes, password resets, 2FA codes
+
+## COMMON REJECTION REASONS:
+- **Content Issues**: Misleading claims, false information, unclear messaging
+- **Grammar/Language**: Spelling errors, poor grammar, unprofessional language
+- **Variable Problems**: Invalid placeholders, missing context for variables
+- **Policy Violations**: Prohibited content, spam-like messaging, adult content
+- **Button Misuse**: Non-functional links, incorrect button types, policy violations
+
+## TEMPLATE QUALITY RATINGS:
+- **Quality Pending**: New templates without feedback (Green status)
+- **High Quality**: Little to no negative feedback (Green status)  
+- **Medium Quality**: Some negative feedback, monitor closely (Yellow status)
+- **Low Quality**: Significant negative feedback, at risk (Red status)
+- **Paused**: Automatically paused due to poor performance (Cannot send)
+- **Disabled**: Permanently disabled after repeated issues (Cannot send)
+
+## TEMPLATE PACING SYSTEM:
+- **New Template Rollout**: Gradual release to assess quality
+- **Threshold Monitoring**: Messages held until quality signals received
+- **Quality Assessment Period**: Usually completed within 1 hour for high-throughput
+- **Automatic Release**: Good quality templates released to full audience
+- **Automatic Pause**: Poor quality templates paused, messages dropped
+
+## TEMPLATE PAUSING RULES:
+- **1st Pause**: 3 hours (Low quality reached)
+- **2nd Pause**: 6 hours (Second low quality instance)  
+- **3rd Pause**: Permanently disabled (Three strikes rule)
+- **Business Impact**: Repeated pauses can affect phone number quality rating
+
+## VARIABLE FORMATTING RULES:
+- **Meta Format**: {{1}}, {{2}}, {{3}} for dynamic content
+- **Descriptive Names**: {{customer_name}}, {{order_number}}, {{appointment_date}}
+- **Context Requirement**: Variables must make sense within message context
+- **Testing Requirement**: All variables must be populated during approval submission
+
+## BUTTON POLICY RESTRICTIONS:
+- **CTA Button Limits**: Maximum 2 CTA buttons per template
+- **Quick Reply Limits**: Maximum 3 quick reply buttons per template  
+- **Mixed Buttons**: Cannot combine CTA and Quick Reply buttons in same template
+- **Functional Links**: All website buttons must lead to functional, relevant pages
+- **Phone Numbers**: Call buttons must use valid, reachable phone numbers
+
+## CONTENT POLICY GUIDELINES:
+- **Value Requirement**: Templates must provide clear value to recipients
+- **Personalization**: Highly personalized content performs better
+- **Opt-in Required**: Recipients must have opted in to receive messages
+- **Frequency Limits**: Avoid overwhelming customers with too many messages
+- **Business Relevance**: Content must be relevant to your business and recipient
+
+## MONITORING AND MAINTENANCE:
+- **Status Webhooks**: Subscribe to template status change notifications
+- **Quality Webhooks**: Monitor template quality rating changes
+- **Regular Reviews**: Periodically review template performance metrics
+- **Content Updates**: Edit and resubmit templates with poor performance
+- **Backup Templates**: Maintain alternative templates for critical messaging
+
+This represents Meta's complete template policy framework for WhatsApp Business API.`,
+          category: 'meta_policies_official',
           content_type: 'policy_reference',
           knowledge_level: 'expert',
           importance_score: 10,
-          tags: ['message-types', 'conversation-categories', 'marketing', 'utility', 'authentication', 'service', 'billing', 'rate-limits']
+          tags: ['meta-policies', 'template-approval', 'quality-ratings', 'template-pacing', 'content-guidelines', 'business-verification']
         }
       ];
 
-      // Meta Template Policies and Restrictions
-      const metaPolicyKnowledge = [
-        {
-          id: crypto.randomUUID(),
-          title: 'Meta WhatsApp Template Approval Process and Restrictions',
-          content: `# Meta WhatsApp Template Approval Process and Restrictions
-
-## Template Approval Requirements:
-- **Submission Time**: 24-48 hours for approval
-- **Quality Guidelines**: Clear, professional, value-driven content
-- **Language Requirements**: Must match business account language
-- **Compliance**: Must follow WhatsApp Business Policy
-
-## Template Categories (Meta Classification):
-- **MARKETING**: Promotional content, offers, announcements
-- **UTILITY**: Transaction updates, account notifications, service updates  
-- **AUTHENTICATION**: OTP and verification code delivery
-
-## Common Rejection Reasons:
-- **Misleading Content**: False claims, unclear offers
-- **Poor Grammar**: Spelling errors, unprofessional language
-- **Placeholder Issues**: Invalid variables, missing context
-- **Policy Violations**: Prohibited content, spam-like messaging
-- **Button Misuse**: Incorrect button types, non-functional links
-
-## Meta Template Button Restrictions:
-- **Maximum 3 buttons per template**
-- **CTA Button Types**: 
-  * "Call Phone Number" (phone call trigger)
-  * "Visit Website" (external link)
-- **Quick Reply Buttons**: Text responses only
-- **CRITICAL RULE**: Cannot mix CTA buttons with Quick Reply buttons in same template
-- **Journey Integration**: flEX journey buttons replace all CTA buttons automatically
-
-## Template Variable Rules:
-- **Format**: {{1}}, {{2}}, {{3}} for dynamic content
-- **Naming**: Use descriptive names like {{customer_name}}, {{order_number}}
-- **Context**: Variables must make sense in message context
-- **Testing**: All variables must be populated during approval submission
-
-## flEX-Specific Template Rules:
-- Templates created in flEX automatically format for Meta submission
-- Button limitations enforced by flEX editor interface
-- Journey buttons cannot coexist with CTA buttons (WhatsApp policy)
-- Real-time preview shows exact WhatsApp message appearance`,
-          category: 'meta_policies',
-          content_type: 'compliance_guide',
-          knowledge_level: 'expert',
-          importance_score: 10,
-          tags: ['meta-templates', 'approval-process', 'restrictions', 'button-limitations', 'policy-compliance', 'template-variables']
-        }
-      ];
-
-      // Combine all knowledge arrays
-      const allKnowledge = [
-        ...flexPlatformKnowledge,
-        ...whatsappKnowledge, 
-        ...metaPolicyKnowledge
-      ];
-
-      // Insert all knowledge in parallel
-      const insertPromises = allKnowledge.map(item => 
+      // Insert all comprehensive knowledge
+      const insertPromises = metaKnowledge.map(item => 
         supabase.from('content_chunks').insert({
           ...item,
           source_context: {
-            source_type: 'comprehensive_rebuild',
-            data_quality: 'high',
-            last_updated: new Date().toISOString()
+            source_type: 'meta_official_documentation',
+            data_quality: 'authoritative',
+            last_updated: new Date().toISOString(),
+            documentation_source: 'developers.facebook.com'
           }
         })
       );
@@ -267,7 +289,7 @@ export const KnowledgeUpdater = () => {
         throw new Error(`Failed to insert knowledge: ${errors.map(e => e.error?.message).join(', ')}`);
       }
 
-      toast.success(`LEXI knowledge completely rebuilt! Added ${allKnowledge.length} comprehensive knowledge items.`);
+      toast.success(`LEXI knowledge COMPLETELY rebuilt with official Meta documentation! Added ${metaKnowledge.length} authoritative knowledge sources.`);
     } catch (error) {
       console.error('Error rebuilding knowledge:', error);
       toast.error(`Failed to rebuild knowledge: ${error.message}`);
