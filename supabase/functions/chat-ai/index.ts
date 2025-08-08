@@ -20,8 +20,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Get request data
-    const { message, context } = await req.json()
+    const { message, context, sessionId } = await req.json()
     console.log('Received message:', message)
+
+    // Track user interaction for analytics
+    const interactionStartTime = Date.now()
 
     // Get Gemini API key from secrets
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
@@ -114,6 +117,49 @@ Provide a direct, helpful answer as LEXI, the flEX platform assistant:`;
 
     const data = await response.json()
     const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate a response.'
+
+    // Calculate response time
+    const responseTime = Date.now() - interactionStartTime
+
+    // Log user interaction for learning and analytics
+    const interactionData = {
+      session_id: sessionId || 'anonymous',
+      user_id: null, // Add user ID if authenticated
+      question: message,
+      ai_response: aiResponse,
+      context_used: { provided_context: context ? context.length : 0 },
+      response_time_ms: responseTime,
+      created_at: new Date().toISOString()
+    }
+
+    // Store interaction (don't await to avoid slowing response)
+    supabase.from('user_ai_interactions').insert(interactionData).then(result => {
+      if (result.error) {
+        console.error('Failed to log interaction:', result.error)
+      }
+    })
+
+    // Check if this reveals knowledge gaps
+    const isLowQualityResponse = aiResponse.includes('Sorry') || 
+                                aiResponse.includes('I don\'t know') ||
+                                aiResponse.length < 100
+
+    if (isLowQualityResponse) {
+      // Log potential knowledge gap
+      supabase.from('knowledge_gaps').upsert({
+        question_text: message,
+        category: 'general',
+        frequency_asked: 1,
+        has_good_answer: false,
+        priority_level: 5,
+        notes: 'AI provided low-quality response',
+        created_at: new Date().toISOString()
+      }, { onConflict: 'question_text' }).then(result => {
+        if (result.error) {
+          console.error('Failed to log knowledge gap:', result.error)
+        }
+      })
+    }
 
     return new Response(
       JSON.stringify({ response: aiResponse }),

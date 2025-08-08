@@ -126,7 +126,30 @@ serve(async (req) => {
         
         const embedding = embeddingData.embedding.values;
 
-        // Store content chunk with embedding - fix foreign key constraint issue
+        // Determine content type and importance based on analysis
+        const isFlexContent = content.content.toLowerCase().includes('flex') || 
+                             content.content.toLowerCase().includes('template') ||
+                             content.content.toLowerCase().includes('campaign') ||
+                             content.content.toLowerCase().includes('whatsapp') ||
+                             content.content.toLowerCase().includes('journey')
+        
+        const contentType = isFlexContent ? 'flex_platform' : 'general'
+        const importanceScore = isFlexContent ? 10 : 5
+        const knowledgeLevel = content.content.length > 5000 ? 'advanced' : 
+                              content.content.length > 2000 ? 'intermediate' : 'basic'
+
+        // Extract tags from content
+        const tags = []
+        if (content.content.toLowerCase().includes('template')) tags.push('templates')
+        if (content.content.toLowerCase().includes('campaign')) tags.push('campaigns') 
+        if (content.content.toLowerCase().includes('journey')) tags.push('journeys')
+        if (content.content.toLowerCase().includes('button')) tags.push('buttons')
+        if (content.content.toLowerCase().includes('contact')) tags.push('contacts')
+        if (content.content.toLowerCase().includes('analytic')) tags.push('analytics')
+        if (content.content.toLowerCase().includes('navigation')) tags.push('navigation')
+        if (content.content.toLowerCase().includes('personalization')) tags.push('personalization')
+
+        // Store content chunk with enhanced metadata
         console.log(`Storing chunk for ${content.source_type} ${content.id} with embedding length: ${embedding.length}`);
         
         // Create unique chunk ID to avoid foreign key constraints
@@ -142,7 +165,19 @@ serve(async (req) => {
             url: content.url,
             embedding: embedding,
             chunk_index: 0,
-            token_count: Math.ceil((content.content?.length || 0) / 4)
+            token_count: Math.ceil((content.content?.length || 0) / 4),
+            content_type: contentType,
+            importance_score: importanceScore,
+            tags: tags,
+            category: isFlexContent ? 'flex_platform' : 'general',
+            knowledge_level: knowledgeLevel,
+            source_context: {
+              source_type: content.source_type,
+              file_type: content.mime_type || content.file_type,
+              original_length: content.content.length,
+              processed_at: new Date().toISOString()
+            },
+            last_updated: new Date().toISOString()
           });
 
         if (chunkError) {
@@ -211,14 +246,44 @@ serve(async (req) => {
       errorMessage = `Failed to process ${failedItems.length} items: ${failedItems.map(item => `${item.type} ${item.id} (${item.error})`).join('; ')}`;
     }
 
-    // Mark session as completed/failed
+    // Calculate training metrics and knowledge coverage
+    const flexContentCount = allContent.filter(c => 
+      c.content && (c.content.toLowerCase().includes('flex') || 
+                   c.content.toLowerCase().includes('template') ||
+                   c.content.toLowerCase().includes('campaign'))
+    ).length
+
+    const trainingMetrics = {
+      total_processed: processedCount,
+      total_failed: failedItems.length,
+      flex_content_percentage: (flexContentCount / allContent.length) * 100,
+      avg_content_length: allContent.reduce((sum, c) => sum + (c.content?.length || 0), 0) / allContent.length,
+      success_rate: successRate * 100
+    }
+
+    const knowledgeCoverage = {
+      platforms: ['flex_platform'],
+      features_covered: ['templates', 'campaigns', 'journeys', 'contacts', 'analytics', 'navigation'],
+      content_types: ['documentation', 'tutorials', 'guides', 'transcriptions'],
+      knowledge_depth: flexContentCount > 10 ? 'comprehensive' : 'basic'
+    }
+
+    // Mark session as completed/failed with enhanced metadata
     const { error: completionError } = await supabase
       .from('ai_training_sessions')
       .update({ 
         status: finalStatus,
         completed_at: new Date().toISOString(),
         progress: 100,
-        error_message: errorMessage
+        error_message: errorMessage,
+        content_sources: {
+          scraped_pages: scrapedPages.length,
+          uploaded_files: uploadedFiles.length,
+          total_content_items: allContent.length
+        },
+        embedding_model: 'text-embedding-004',
+        training_metrics: trainingMetrics,
+        knowledge_coverage: knowledgeCoverage
       })
       .eq('id', sessionId);
 
