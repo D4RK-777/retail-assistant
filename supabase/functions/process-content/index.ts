@@ -25,20 +25,41 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get scraped pages to process
-    const { data: pages, error: pagesError } = await supabase
-      .from('scraped_pages')
-      .select('*');
+    // Get both scraped pages and uploaded files to process
+    const [scrapedPagesResult, uploadedFilesResult] = await Promise.all([
+      supabase.from('scraped_pages').select('*'),
+      supabase.from('uploaded_files').select('*').filter('content', 'not.is', null)
+    ]);
 
-    if (pagesError) {
-      throw new Error(`Failed to fetch pages: ${pagesError.message}`);
+    if (scrapedPagesResult.error) {
+      throw new Error(`Failed to fetch scraped pages: ${scrapedPagesResult.error.message}`);
     }
 
-    if (!pages || pages.length === 0) {
+    if (uploadedFilesResult.error) {
+      throw new Error(`Failed to fetch uploaded files: ${uploadedFilesResult.error.message}`);
+    }
+
+    // Combine all content sources
+    const scrapedPages = (scrapedPagesResult.data || []).map(page => ({
+      ...page,
+      source_type: 'scraped_page'
+    }));
+    
+    const uploadedFiles = (uploadedFilesResult.data || []).map(file => ({
+      id: file.id,
+      title: file.original_name,
+      content: file.content,
+      url: file.storage_path,
+      source_type: 'uploaded_file'
+    }));
+
+    const allContent = [...scrapedPages, ...uploadedFiles];
+
+    if (allContent.length === 0) {
       throw new Error('No content found to process');
     }
 
-    console.log(`Processing ${pages.length} pages for session ${sessionId}`);
+    console.log(`Processing ${allContent.length} content items (${scrapedPages.length} scraped pages, ${uploadedFiles.length} uploaded files) for session ${sessionId}`);
 
     // Create session record first
     const { error: sessionError } = await supabase
@@ -47,7 +68,7 @@ serve(async (req) => {
         id: sessionId,
         type,
         status: 'processing',
-        total_content: pages.length,
+        total_content: allContent.length,
         processed_content: 0
       });
 
@@ -58,11 +79,11 @@ serve(async (req) => {
 
     let processedCount = 0;
 
-    // Process each page
-    for (const page of pages) {
+    // Process each content item
+    for (const content of allContent) {
       try {
         // Generate embeddings using Google Gemini
-        console.log(`Generating embedding for page ${page.id}: ${page.title}`);
+        console.log(`Generating embedding for ${content.source_type} ${content.id}: ${content.title}`);
         
         const embeddingResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
           method: 'POST',
@@ -73,7 +94,7 @@ serve(async (req) => {
             model: 'models/text-embedding-004',
             content: {
               parts: [{
-                text: `${page.title || ''}\n\n${page.content || ''}`.slice(0, 8000)
+                text: `${content.title || ''}\n\n${content.content || ''}`.slice(0, 8000)
               }]
             }
           }),
@@ -81,49 +102,49 @@ serve(async (req) => {
 
         if (!embeddingResponse.ok) {
           const errorText = await embeddingResponse.text();
-          console.error(`Failed to generate embedding for page ${page.id}:`, errorText);
+          console.error(`Failed to generate embedding for ${content.source_type} ${content.id}:`, errorText);
           continue;
         }
 
         const embeddingData = await embeddingResponse.json();
-        console.log(`Embedding response for page ${page.id}:`, JSON.stringify(embeddingData).slice(0, 200));
+        console.log(`Embedding response for ${content.source_type} ${content.id}:`, JSON.stringify(embeddingData).slice(0, 200));
         
         if (!embeddingData.embedding || !embeddingData.embedding.values) {
-          console.error(`Invalid embedding response for page ${page.id}:`, embeddingData);
+          console.error(`Invalid embedding response for ${content.source_type} ${content.id}:`, embeddingData);
           continue;
         }
         
         const embedding = embeddingData.embedding.values;
 
         // Store content chunk with embedding
-        console.log(`Storing chunk for page ${page.id} with embedding length: ${embedding.length}`);
+        console.log(`Storing chunk for ${content.source_type} ${content.id} with embedding length: ${embedding.length}`);
         
         const { error: chunkError } = await supabase
           .from('content_chunks')
           .upsert({
-            source_id: page.id,
-            content: page.content,
-            title: page.title,
-            url: page.url,
+            source_id: content.id,
+            content: content.content,
+            title: content.title,
+            url: content.url,
             embedding: embedding, // Gemini returns array directly
             chunk_index: 0,
-            token_count: Math.ceil((page.content?.length || 0) / 4) // Rough token estimate
+            token_count: Math.ceil((content.content?.length || 0) / 4) // Rough token estimate
           });
 
-        console.log(`Upsert result for page ${page.id}:`, chunkError ? 'ERROR' : 'SUCCESS');
+        console.log(`Upsert result for ${content.source_type} ${content.id}:`, chunkError ? 'ERROR' : 'SUCCESS');
 
         if (chunkError) {
-          console.error(`Failed to store chunk for page ${page.id}:`, JSON.stringify(chunkError, null, 2));
+          console.error(`Failed to store chunk for ${content.source_type} ${content.id}:`, JSON.stringify(chunkError, null, 2));
         } else {
           processedCount++;
-          console.log(`Successfully processed page ${page.id} (${processedCount}/${pages.length})`);
+          console.log(`Successfully processed ${content.source_type} ${content.id} (${processedCount}/${allContent.length})`);
           
           // Update progress
           const { error: progressError } = await supabase
             .from('ai_training_sessions')
             .update({ 
               processed_content: processedCount,
-              progress: Math.round((processedCount / pages.length) * 100)
+              progress: Math.round((processedCount / allContent.length) * 100)
             })
             .eq('id', sessionId);
 
@@ -133,7 +154,7 @@ serve(async (req) => {
         }
 
       } catch (error) {
-        console.error(`Error processing page ${page.id}:`, error);
+        console.error(`Error processing ${content.source_type} ${content.id}:`, error);
       }
     }
 
@@ -151,13 +172,13 @@ serve(async (req) => {
       console.error('Failed to mark session as completed:', completionError);
     }
 
-    console.log(`Training session ${sessionId} completed. Processed ${processedCount}/${pages.length} pages.`);
+    console.log(`Training session ${sessionId} completed. Processed ${processedCount}/${allContent.length} content items.`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         processedCount,
-        totalPages: pages.length,
+        totalPages: allContent.length,
         sessionId 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
