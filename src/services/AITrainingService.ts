@@ -26,6 +26,11 @@ export class AITrainingService {
         throw new Error(`Failed to start training: ${error.message}`);
       }
 
+      // Check if the response indicates partial failure
+      if (data && !data.success && data.error) {
+        throw new Error(data.error);
+      }
+
       // Return the session object - it's now created in the database
       return {
         id: sessionId,

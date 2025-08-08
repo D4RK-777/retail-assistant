@@ -78,12 +78,23 @@ serve(async (req) => {
     }
 
     let processedCount = 0;
+    const failedItems = [];
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds
 
-    // Process each content item
-    for (const content of allContent) {
+    // Helper function to process a single content item with retries
+    const processContentWithRetry = async (content, retryCount = 0) => {
       try {
-        // Generate embeddings using Google Gemini
-        console.log(`Generating embedding for ${content.source_type} ${content.id}: ${content.title}`);
+        // Skip empty content
+        if (!content.content || content.content.trim().length === 0) {
+          console.warn(`Skipping ${content.source_type} ${content.id}: No content available`);
+          return false;
+        }
+
+        console.log(`Generating embedding for ${content.source_type} ${content.id}: ${content.title} (attempt ${retryCount + 1})`);
+        
+        // Prepare content for embedding - ensure it's not too long
+        const contentText = `${content.title || ''}\n\n${content.content || ''}`.slice(0, 7000); // Reduced to be safe
         
         const embeddingResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
           method: 'POST',
@@ -94,7 +105,7 @@ serve(async (req) => {
             model: 'models/text-embedding-004',
             content: {
               parts: [{
-                text: `${content.title || ''}\n\n${content.content || ''}`.slice(0, 8000)
+                text: contentText
               }]
             }
           }),
@@ -102,16 +113,13 @@ serve(async (req) => {
 
         if (!embeddingResponse.ok) {
           const errorText = await embeddingResponse.text();
-          console.error(`Failed to generate embedding for ${content.source_type} ${content.id}:`, errorText);
-          continue;
+          throw new Error(`Embedding API error: ${embeddingResponse.status} - ${errorText}`);
         }
 
         const embeddingData = await embeddingResponse.json();
-        console.log(`Embedding response for ${content.source_type} ${content.id}:`, JSON.stringify(embeddingData).slice(0, 200));
         
         if (!embeddingData.embedding || !embeddingData.embedding.values) {
-          console.error(`Invalid embedding response for ${content.source_type} ${content.id}:`, embeddingData);
-          continue;
+          throw new Error(`Invalid embedding response: ${JSON.stringify(embeddingData)}`);
         }
         
         const embedding = embeddingData.embedding.values;
@@ -126,45 +134,85 @@ serve(async (req) => {
             content: content.content,
             title: content.title,
             url: content.url,
-            embedding: embedding, // Gemini returns array directly
+            embedding: embedding,
             chunk_index: 0,
-            token_count: Math.ceil((content.content?.length || 0) / 4) // Rough token estimate
+            token_count: Math.ceil((content.content?.length || 0) / 4)
           });
 
-        console.log(`Upsert result for ${content.source_type} ${content.id}:`, chunkError ? 'ERROR' : 'SUCCESS');
-
         if (chunkError) {
-          console.error(`Failed to store chunk for ${content.source_type} ${content.id}:`, JSON.stringify(chunkError, null, 2));
-        } else {
-          processedCount++;
-          console.log(`Successfully processed ${content.source_type} ${content.id} (${processedCount}/${allContent.length})`);
-          
-          // Update progress
-          const { error: progressError } = await supabase
-            .from('ai_training_sessions')
-            .update({ 
-              processed_content: processedCount,
-              progress: Math.round((processedCount / allContent.length) * 100)
-            })
-            .eq('id', sessionId);
-
-          if (progressError) {
-            console.error('Failed to update progress:', progressError);
-          }
+          throw new Error(`Database upsert error: ${JSON.stringify(chunkError)}`);
         }
 
+        console.log(`Successfully processed ${content.source_type} ${content.id}`);
+        return true;
+
       } catch (error) {
-        console.error(`Error processing ${content.source_type} ${content.id}:`, error);
+        console.error(`Error processing ${content.source_type} ${content.id} (attempt ${retryCount + 1}):`, error.message);
+        
+        if (retryCount < maxRetries) {
+          console.log(`Retrying ${content.source_type} ${content.id} in ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return await processContentWithRetry(content, retryCount + 1);
+        } else {
+          console.error(`Failed to process ${content.source_type} ${content.id} after ${maxRetries + 1} attempts`);
+          failedItems.push({
+            id: content.id,
+            type: content.source_type,
+            title: content.title,
+            error: error.message
+          });
+          return false;
+        }
       }
+    };
+
+    // Process each content item with retries
+    for (let i = 0; i < allContent.length; i++) {
+      const content = allContent[i];
+      const success = await processContentWithRetry(content);
+      
+      if (success) {
+        processedCount++;
+      }
+      
+      // Update progress after each item
+      const { error: progressError } = await supabase
+        .from('ai_training_sessions')
+        .update({ 
+          processed_content: processedCount,
+          progress: Math.round(((i + 1) / allContent.length) * 100)
+        })
+        .eq('id', sessionId);
+
+      if (progressError) {
+        console.error('Failed to update progress:', progressError);
+      }
+
+      console.log(`Progress: ${i + 1}/${allContent.length} processed, ${processedCount} successful`);
     }
 
-    // Mark session as completed
+    // Log failed items for debugging
+    if (failedItems.length > 0) {
+      console.error(`Failed to process ${failedItems.length} items:`, failedItems);
+    }
+
+    // Determine final status based on success rate
+    const successRate = processedCount / allContent.length;
+    const finalStatus = successRate === 1.0 ? 'completed' : (successRate > 0.8 ? 'completed' : 'failed');
+    
+    let errorMessage = null;
+    if (failedItems.length > 0) {
+      errorMessage = `Failed to process ${failedItems.length} items: ${failedItems.map(item => `${item.type} ${item.id} (${item.error})`).join('; ')}`;
+    }
+
+    // Mark session as completed/failed
     const { error: completionError } = await supabase
       .from('ai_training_sessions')
       .update({ 
-        status: 'completed',
+        status: finalStatus,
         completed_at: new Date().toISOString(),
-        progress: 100
+        progress: 100,
+        error_message: errorMessage
       })
       .eq('id', sessionId);
 
@@ -172,14 +220,33 @@ serve(async (req) => {
       console.error('Failed to mark session as completed:', completionError);
     }
 
-    console.log(`Training session ${sessionId} completed. Processed ${processedCount}/${allContent.length} content items.`);
+    console.log(`Training session ${sessionId} ${finalStatus}. Processed ${processedCount}/${allContent.length} content items (${Math.round(successRate * 100)}% success rate).`);
+
+    // If less than 100% success, return an error to alert the user
+    if (successRate < 1.0) {
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: `Only processed ${processedCount}/${allContent.length} items (${Math.round(successRate * 100)}%). Check logs for details.`,
+          processedCount,
+          totalPages: allContent.length,
+          failedItems: failedItems,
+          sessionId 
+        }),
+        { 
+          status: 422,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         processedCount,
         totalPages: allContent.length,
-        sessionId 
+        sessionId,
+        message: `Successfully processed all ${allContent.length} content items!`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
