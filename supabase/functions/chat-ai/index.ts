@@ -54,6 +54,8 @@ FLEX PLATFORM SPECIFIC KNOWLEDGE:
 - For contact list preparation: flEX provides a dedicated CSV template that users must download from the platform for importing contacts. Users should download this specific CSV template from flEX, fill it with their contact data (ensuring phone numbers are in international format like +15551234567), and then import it back into flEX.
 - Contact segmentation is available within flEX for targeted messaging campaigns
 - flEX integrates directly with WhatsApp Business API for messaging
+- Message editing: Users can edit their messages within the flEX platform. This is a core feature that allows users to modify, update, and customize their messaging content before and after creation.
+- Message management: flEX provides comprehensive message editing capabilities across the platform for all message types and campaigns.
 
 KNOWLEDGE BASE:
 ${context}
