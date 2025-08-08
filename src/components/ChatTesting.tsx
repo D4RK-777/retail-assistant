@@ -13,7 +13,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CrawlerService } from '@/services/CrawlerService';
 import { AISpecializationService } from '@/services/AISpecializationService';
-import womanAvatar from '@/assets/woman-avatar.jpg';
+import womanAvatar from '@/assets/woman-avatar-green-eyes.jpg';
 
 // Define the ChatMessage interface
 interface ChatMessage {
