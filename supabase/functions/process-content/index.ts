@@ -39,10 +39,11 @@ serve(async (req) => {
       throw new Error(`Failed to fetch uploaded files: ${uploadedFilesResult.error.message}`);
     }
 
-    // Combine all content sources
+    // Combine all content sources with proper source handling
     const scrapedPages = (scrapedPagesResult.data || []).map(page => ({
       ...page,
-      source_type: 'scraped_page'
+      source_type: 'scraped_page',
+      source_table: 'scraped_pages'
     }));
     
     const uploadedFiles = (uploadedFilesResult.data || []).map(file => ({
@@ -50,7 +51,8 @@ serve(async (req) => {
       title: file.original_name,
       content: file.content,
       url: file.storage_path,
-      source_type: 'uploaded_file'
+      source_type: 'uploaded_file',
+      source_table: 'uploaded_files'
     }));
 
     const allContent = [...scrapedPages, ...uploadedFiles];
@@ -124,12 +126,16 @@ serve(async (req) => {
         
         const embedding = embeddingData.embedding.values;
 
-        // Store content chunk with embedding
+        // Store content chunk with embedding - fix foreign key constraint issue
         console.log(`Storing chunk for ${content.source_type} ${content.id} with embedding length: ${embedding.length}`);
+        
+        // Create unique chunk ID to avoid foreign key constraints
+        const chunkId = crypto.randomUUID();
         
         const { error: chunkError } = await supabase
           .from('content_chunks')
           .upsert({
+            id: chunkId,
             source_id: content.id,
             content: content.content,
             title: content.title,

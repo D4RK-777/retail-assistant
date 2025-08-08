@@ -116,17 +116,32 @@ export function AITraining() {
       return;
     }
 
-    try {
-      const session = await AITrainingService.startTraining(type);
-      setCurrentTraining(session);
+    // IMMEDIATELY show training started in UI - no more leaving page bullshit
+    const tempSession: TrainingSession = {
+      id: crypto.randomUUID(),
+      type,
+      status: 'processing',
+      progress: 0,
+      total_content: selectedSources,
+      processed_content: 0,
+      created_at: new Date(),
+    };
+    
+    setCurrentTraining(tempSession);
+    
+    toast({
+      title: `${type === "full" ? "Full" : "Incremental"} training started`,
+      description: `Training AI on ${selectedSources} content sources`,
+    });
 
-      toast({
-        title: `${type === "full" ? "Full" : "Incremental"} training started`,
-        description: `Training AI on content from your sources`,
-      });
+    try {
+      const session = await AITrainingService.startTraining(tempSession.id, type);
+      // Update with real session data from backend
+      setCurrentTraining(session);
 
     } catch (error) {
       console.error('Failed to start training:', error);
+      setCurrentTraining(null); // Clear failed training
       toast({
         title: "Failed to start training",
         description: error instanceof Error ? error.message : "Unknown error occurred",

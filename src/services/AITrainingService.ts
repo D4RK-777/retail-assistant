@@ -13,21 +13,24 @@ export interface TrainingSession {
 }
 
 export class AITrainingService {
-  static async startTraining(type: "full" | "incremental"): Promise<TrainingSession> {
+  static async startTraining(sessionId: string, type: "full" | "incremental"): Promise<TrainingSession> {
     try {
-      const sessionId = crypto.randomUUID();
-      
       // Start processing content with the edge function
       const { data, error } = await supabase.functions.invoke('process-content', {
         body: { sessionId, type }
       });
 
       if (error) {
-        throw new Error(`Failed to start training: ${error.message}`);
+        console.error('Edge function error:', error);
+        throw new Error(`Edge function failed: ${error.message}`);
       }
 
-      // Check if the response indicates partial failure
-      if (data && !data.success && data.error) {
+      if (!data) {
+        throw new Error('No response from edge function');
+      }
+
+      // Check if the response indicates failure
+      if (!data.success && data.error) {
         throw new Error(data.error);
       }
 
@@ -43,7 +46,8 @@ export class AITrainingService {
       };
 
     } catch (error) {
-      throw new Error(`Failed to start training: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Training service error:', error);
+      throw new Error(`Training failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
