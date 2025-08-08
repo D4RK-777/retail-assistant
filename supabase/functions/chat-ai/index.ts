@@ -23,25 +23,71 @@ serve(async (req) => {
     const { message, context, sessionId } = await req.json()
     console.log('Received message:', message)
 
-    // Enhanced context retrieval from content chunks with improved categorization
+    // Enhanced context retrieval with smart categorization
     let enhancedContext = context || '';
     
     try {
-      // Search content chunks for relevant content with enhanced importance scoring
-      const { data: relevantContent, error: searchError } = await supabase
+      // Determine search strategy based on user question
+      const searchTerms = message.toLowerCase();
+      let searchConditions = [];
+      
+      // Template-related queries
+      if (searchTerms.includes('template')) {
+        searchConditions.push('content.ilike.%template%');
+        searchConditions.push('title.ilike.%template%');
+        searchConditions.push('tags.cs.{templates}');
+      }
+      
+      // Campaign-related queries  
+      if (searchTerms.includes('campaign')) {
+        searchConditions.push('content.ilike.%campaign%');
+        searchConditions.push('title.ilike.%campaign%');
+      }
+      
+      // Message type queries (CRITICAL - this was missing!)
+      if ((searchTerms.includes('message') && searchTerms.includes('type')) || 
+          searchTerms.includes('conversation') || 
+          searchTerms.includes('marketing') || 
+          searchTerms.includes('utility') || 
+          searchTerms.includes('authentication') || 
+          searchTerms.includes('service')) {
+        searchConditions.push('content.ilike.%message type%');
+        searchConditions.push('content.ilike.%conversation categor%');
+        searchConditions.push('content.ilike.%marketing message%');
+        searchConditions.push('content.ilike.%utility message%');
+        searchConditions.push('content.ilike.%authentication message%');
+        searchConditions.push('content.ilike.%service message%');
+      }
+      
+      // Channel connection queries
+      if (searchTerms.includes('connect') || searchTerms.includes('channel')) {
+        searchConditions.push('content.ilike.%connect%');
+        searchConditions.push('content.ilike.%channel%');
+      }
+
+      // Build the query
+      let query = supabase
         .from('content_chunks')
-        .select('title, content, category, content_type, importance_score, tags')
-        .textSearch('content', message.split(' ').slice(0, 5).join(' | '), { type: 'websearch' })
+        .select('title, content, category, content_type, importance_score, tags, knowledge_level')
         .order('importance_score', { ascending: false })
-        .limit(5);
+        .limit(8);
+
+      if (searchConditions.length > 0) {
+        query = query.or(searchConditions.join(','));
+      } else {
+        // Fallback to text search
+        query = query.textSearch('content', message.split(' ').slice(0, 5).join(' | '), { type: 'websearch' });
+      }
+
+      const { data: relevantContent, error: searchError } = await query;
 
       if (!searchError && relevantContent && relevantContent.length > 0) {
         const contextSections = relevantContent.map(item => 
-          `**${item.title || 'Knowledge Item'}** (${item.category}/${item.content_type})\n${item.content.slice(0, 800)}...\n`
+          `**${item.title || 'Knowledge Item'}** (${item.category}/${item.content_type} - ${item.knowledge_level})\n${item.content.slice(0, 1200)}...\n`
         ).join('\n---\n');
         
         enhancedContext = `${context}\n\nRELEVANT KNOWLEDGE BASE CONTENT:\n${contextSections}`;
-        console.log(`Enhanced context with ${relevantContent.length} relevant items from enhanced knowledge base`);
+        console.log(`Enhanced context with ${relevantContent.length} relevant items using smart search`);
       }
     } catch (error) {
       console.warn('Failed to enhance context from knowledge base:', error.message);
