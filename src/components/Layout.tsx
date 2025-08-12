@@ -12,10 +12,10 @@ interface LayoutProps {
 }
 
 const tabs = [
-  { id: "knowledge", label: "Knowledge Base", icon: Database },
-  { id: "training", label: "AI Training", icon: Brain },
-  { id: "testing", label: "AI Personalities", icon: Bot },
-  { id: "settings", label: "Settings", icon: Settings },
+  { id: "knowledge", label: "Knowledge Base", icon: Database, path: "/knowledge" },
+  { id: "training", label: "AI Training", icon: Brain, path: "/training" },
+  { id: "personalities", label: "AI Personalities", icon: Bot, path: "/personalities" },
+  { id: "settings", label: "Settings", icon: Settings, path: "/settings" },
 ];
 
 export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
@@ -79,7 +79,7 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
                     "w-full justify-start gap-3",
                     isCollapsed && "justify-center px-0"
                   )}
-                  onClick={() => onTabChange(tab.id)}
+                  onClick={() => navigate(tab.path)}
                 >
                   <Icon className={cn("h-5 w-5", isActive && "animate-pulse-soft")} />
                   {!isCollapsed && <span>{tab.label}</span>}
