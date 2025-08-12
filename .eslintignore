@@ -1,0 +1,3 @@
+# Ignore Supabase edge functions - they run in Deno, not Node.js
+supabase/functions/**/*
+**/supabase/functions/**/*

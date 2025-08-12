@@ -1,5 +1,14 @@
+// @ts-ignore - Deno URL imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// @ts-ignore - Deno URL imports
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+// Deno global types
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,7 +24,7 @@ interface ScrapedContent {
   scraped_at: string
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -80,7 +89,7 @@ serve(async (req) => {
           return null
         }
       })
-      .filter(link => link && link.startsWith('http'))
+      .filter((link): link is string => link !== null && link.startsWith('http'))
       .slice(0, 50) // Limit number of links
 
     // Initialize Supabase client

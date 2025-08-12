@@ -1,18 +1,27 @@
+// @ts-ignore - Deno URL imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// @ts-ignore - Deno URL imports
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+// Deno global types
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { domain, maxPages = 10 } = await req.json()
+    const { domain, maxPages = 10 }: { domain: string; maxPages?: number } = await req.json()
     
     if (!domain) {
       return new Response(
@@ -101,7 +110,7 @@ serve(async (req) => {
               return null
             }
           })
-          .filter(link => {
+          .filter((link): link is string => {
             if (!link) return false
             try {
               const linkUrl = new URL(link)

@@ -1,0 +1,4 @@
+# These are Deno edge functions, not Node.js TypeScript
+**/*
+*.ts
+*.js

@@ -1,5 +1,6 @@
-// @deno-types="https://esm.sh/@supabase/supabase-js@2.7.1/dist/module/index.d.ts"
+// @ts-ignore - Deno URL imports
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+// @ts-ignore - Deno URL imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 // Deno global types
@@ -14,7 +15,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,7 +28,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Get request data
-    const { message, context, sessionId } = await req.json()
+    const { message, context, sessionId }: { message: string; context: any; sessionId: string } = await req.json()
     console.log('Received message:', message)
 
     // Enhanced context retrieval with smart categorization
@@ -62,14 +63,14 @@ serve(async (req) => {
       const { data: relevantContent, error: searchError } = await query;
 
       if (!searchError && relevantContent && relevantContent.length > 0) {
-        const contextSections = relevantContent.map(item => 
+        const contextSections = relevantContent.map((item: any) => 
           `**${item.title || 'Knowledge Item'}** (${item.category}/${item.content_type} - ${item.knowledge_level})\n${item.content.slice(0, 1200)}...\n`
         ).join('\n---\n');
         
         enhancedContext = `${context}\n\nRELEVANT KNOWLEDGE BASE CONTENT:\n${contextSections}`;
         console.log(`Enhanced context with ${relevantContent.length} relevant items using smart search`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.warn('Failed to enhance context from knowledge base:', error.message);
     }
 
@@ -165,7 +166,7 @@ Provide a direct, helpful answer as LEXI, the flEX platform assistant:`;
       throw new Error(`Gemini API request failed: ${response.status}`)
     }
 
-    const data = await response.json()
+    const data: any = await response.json()
     const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate a response.'
 
     // Calculate response time
@@ -183,7 +184,7 @@ Provide a direct, helpful answer as LEXI, the flEX platform assistant:`;
     }
 
     // Store interaction (don't await to avoid slowing response)
-    supabase.from('assistant_user_interactions').insert(interactionData).then(result => {
+    supabase.from('assistant_user_interactions').insert(interactionData).then((result: any) => {
       if (result.error) {
         console.error('Failed to log interaction:', result.error)
       }

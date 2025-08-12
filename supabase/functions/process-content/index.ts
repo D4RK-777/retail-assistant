@@ -1,19 +1,29 @@
+// @ts-ignore - Deno URL imports
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-ignore - Deno URL imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore - Deno URL imports
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+
+// Deno global types
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { sessionId, type } = await req.json();
+    const { sessionId, type }: { sessionId: string; type: string } = await req.json();
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -80,7 +90,7 @@ serve(async (req) => {
     }
 
     let processedCount = 0;
-    const failedItems = [];
+    const failedItems: Array<{id: any, type: any, title: any, error: any}> = [];
     const maxRetries = 3;
     const retryDelay = 2000; // 2 seconds
 
@@ -139,7 +149,7 @@ serve(async (req) => {
                               content.content.length > 2000 ? 'intermediate' : 'basic'
 
         // Extract tags from content
-        const tags = []
+        const tags: string[] = []
         if (content.content.toLowerCase().includes('template')) tags.push('templates')
         if (content.content.toLowerCase().includes('campaign')) tags.push('campaigns') 
         if (content.content.toLowerCase().includes('journey')) tags.push('journeys')
@@ -150,7 +160,7 @@ serve(async (req) => {
         if (content.content.toLowerCase().includes('personalization')) tags.push('personalization')
 
     // Enhanced categorization logic
-    const analyzeContent = (content) => {
+    const analyzeContent = (content: any) => {
       const text = content.content.toLowerCase();
       const title = (content.title || '').toLowerCase();
       
@@ -158,8 +168,8 @@ serve(async (req) => {
       let primaryCategory = 'general';
       let subCategory = 'uncategorized';
       let userRole = 'general';
-      let relevanceTags = [];
-      let keywords = [];
+      let relevanceTags: string[] = [];
+      let keywords: string[] = [];
       
       // WhatsApp Business API categorization
       if (text.includes('whatsapp') || text.includes('meta') || text.includes('graph api')) {
@@ -350,7 +360,7 @@ serve(async (req) => {
     const successRate = processedCount / allContent.length;
     const finalStatus = successRate === 1.0 ? 'completed' : (successRate > 0.8 ? 'completed' : 'failed');
     
-    let errorMessage = null;
+    let errorMessage: string | null = null;
     if (failedItems.length > 0) {
       errorMessage = `Failed to process ${failedItems.length} items: ${failedItems.map(item => `${item.type} ${item.id} (${item.error})`).join('; ')}`;
     }
