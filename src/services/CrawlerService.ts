@@ -75,9 +75,13 @@ export class CrawlerService {
 
   static async getScrapedPages(): Promise<ScrapedPage[]> {
     try {
+      // Get user's organization ID
+      const { data: orgData } = await supabase.rpc('get_user_organization');
+      
       const { data, error } = await supabase
-        .from('scraped_pages')
+        .from('assistant_scraped_pages')
         .select('*')
+        .eq('organization_id', orgData)
         .order('scraped_at', { ascending: false })
 
       if (error) {
@@ -94,10 +98,14 @@ export class CrawlerService {
 
   static async deleteScrapedPage(url: string): Promise<boolean> {
     try {
+      // Get user's organization ID
+      const { data: orgData } = await supabase.rpc('get_user_organization');
+      
       const { error } = await supabase
-        .from('scraped_pages')
+        .from('assistant_scraped_pages')
         .delete()
         .eq('url', url)
+        .eq('organization_id', orgData)
 
       if (error) {
         console.error('Error deleting scraped page:', error)
@@ -113,10 +121,13 @@ export class CrawlerService {
 
   static async clearAllPages(): Promise<boolean> {
     try {
+      // Get user's organization ID
+      const { data: orgData } = await supabase.rpc('get_user_organization');
+      
       const { error } = await supabase
-        .from('scraped_pages')
+        .from('assistant_scraped_pages')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all rows
+        .eq('organization_id', orgData)
 
       if (error) {
         console.error('Error clearing all pages:', error)
@@ -151,9 +162,13 @@ export class CrawlerService {
 
   static async searchPages(query: string): Promise<ScrapedPage[]> {
     try {
+      // Get user's organization ID
+      const { data: orgData } = await supabase.rpc('get_user_organization');
+      
       const { data, error } = await supabase
-        .from('scraped_pages')
+        .from('assistant_scraped_pages')
         .select('*')
+        .eq('organization_id', orgData)
         .textSearch('content', query)
         .order('scraped_at', { ascending: false })
 

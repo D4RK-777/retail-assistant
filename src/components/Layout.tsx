@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Brain, Database, MessageSquare, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Brain, Database, Bot, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/useAuth";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,18 +14,30 @@ interface LayoutProps {
 const tabs = [
   { id: "knowledge", label: "Knowledge Base", icon: Database },
   { id: "training", label: "AI Training", icon: Brain },
-  { id: "testing", label: "Chat Testing", icon: MessageSquare },
+  { id: "testing", label: "AI Personalities", icon: Bot },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
 export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      console.log('LAYOUT: Sign out successful, redirecting to login');
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="flex h-16 items-center gap-4 px-6">
+        <div className="flex h-16 items-center justify-between gap-4 px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary">
               <Brain className="h-6 w-6 text-white" />
@@ -33,6 +47,15 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
               <p className="text-sm text-muted-foreground">Enhance your AI's knowledge and capabilities</p>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSignOut}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
         </div>
       </header>
 

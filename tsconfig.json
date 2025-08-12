@@ -16,4 +16,12 @@
     "noUnusedLocals": false,
     "strictNullChecks": false
   }
+,
+  "exclude": [
+    "supabase/**/*",
+    "**/supabase/**/*",
+    "supabase/functions/**/*",
+    "**/deno.json",
+    "**/import_map.json"
+  ]
 }

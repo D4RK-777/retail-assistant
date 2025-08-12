@@ -1,6 +1,13 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+// @deno-types="https://esm.sh/@supabase/supabase-js@2.7.1/dist/module/index.d.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+// Deno global types
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,54 +36,27 @@ serve(async (req) => {
     try {
       // Determine search strategy based on user question
       const searchTerms = message.toLowerCase();
-      let searchConditions = [];
       
-      // Template-related queries
-      if (searchTerms.includes('template')) {
-        searchConditions.push('content.ilike.%template%');
-        searchConditions.push('title.ilike.%template%');
-        searchConditions.push('tags.cs.{templates}');
-      }
-      
-      // Campaign-related queries  
-      if (searchTerms.includes('campaign')) {
-        searchConditions.push('content.ilike.%campaign%');
-        searchConditions.push('title.ilike.%campaign%');
-      }
-      
-      // Message type queries (CRITICAL - this was missing!)
-      if ((searchTerms.includes('message') && searchTerms.includes('type')) || 
-          searchTerms.includes('conversation') || 
-          searchTerms.includes('marketing') || 
-          searchTerms.includes('utility') || 
-          searchTerms.includes('authentication') || 
-          searchTerms.includes('service')) {
-        searchConditions.push('content.ilike.%message type%');
-        searchConditions.push('content.ilike.%conversation categor%');
-        searchConditions.push('content.ilike.%marketing message%');
-        searchConditions.push('content.ilike.%utility message%');
-        searchConditions.push('content.ilike.%authentication message%');
-        searchConditions.push('content.ilike.%service message%');
-      }
-      
-      // Channel connection queries
-      if (searchTerms.includes('connect') || searchTerms.includes('channel')) {
-        searchConditions.push('content.ilike.%connect%');
-        searchConditions.push('content.ilike.%channel%');
-      }
-
-      // Build the query
+      // Build the query with proper Supabase filters
       let query = supabase
-        .from('content_chunks')
+        .from('assistant_content_chunks')
         .select('title, content, category, content_type, importance_score, tags, knowledge_level')
         .order('importance_score', { ascending: false })
         .limit(8);
 
-      if (searchConditions.length > 0) {
-        query = query.or(searchConditions.join(','));
+      // Apply filters based on search terms
+      if (searchTerms.includes('template')) {
+        query = query.or('content.ilike.%template%,title.ilike.%template%');
+      } else if (searchTerms.includes('campaign')) {
+        query = query.or('content.ilike.%campaign%,title.ilike.%campaign%');
+      } else if (searchTerms.includes('message') || searchTerms.includes('conversation') || searchTerms.includes('marketing')) {
+        query = query.or('content.ilike.%message%,content.ilike.%conversation%,content.ilike.%marketing%');
+      } else if (searchTerms.includes('connect') || searchTerms.includes('channel')) {
+        query = query.or('content.ilike.%connect%,content.ilike.%channel%');
       } else {
-        // Fallback to text search
-        query = query.textSearch('content', message.split(' ').slice(0, 5).join(' | '), { type: 'websearch' });
+        // Fallback to general content search
+        const searchWords = message.split(' ').slice(0, 3).join('%');
+        query = query.ilike('content', `%${searchWords}%`);
       }
 
       const { data: relevantContent, error: searchError } = await query;
@@ -203,7 +183,7 @@ Provide a direct, helpful answer as LEXI, the flEX platform assistant:`;
     }
 
     // Store interaction (don't await to avoid slowing response)
-    supabase.from('user_ai_interactions').insert(interactionData).then(result => {
+    supabase.from('assistant_user_interactions').insert(interactionData).then(result => {
       if (result.error) {
         console.error('Failed to log interaction:', result.error)
       }
@@ -214,21 +194,9 @@ Provide a direct, helpful answer as LEXI, the flEX platform assistant:`;
                                 aiResponse.includes('I don\'t know') ||
                                 aiResponse.length < 100
 
+    // Note: Knowledge gaps logging removed as we don't have this table in assistant schema
     if (isLowQualityResponse) {
-      // Log potential knowledge gap
-      supabase.from('knowledge_gaps').upsert({
-        question_text: message,
-        category: 'general',
-        frequency_asked: 1,
-        has_good_answer: false,
-        priority_level: 5,
-        notes: 'AI provided low-quality response',
-        created_at: new Date().toISOString()
-      }, { onConflict: 'question_text' }).then(result => {
-        if (result.error) {
-          console.error('Failed to log knowledge gap:', result.error)
-        }
-      })
+      console.log('Low quality response detected for message:', message)
     }
 
     return new Response(

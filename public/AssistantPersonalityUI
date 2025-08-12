@@ -1,0 +1,290 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+// --- Helper Icons ---
+// Using inline SVGs for icons to keep the component self-contained.
+const SendIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+    </svg>
+);
+
+const BotIcon = ({ persona }) => {
+    // Simple icon representation for each persona
+    const icons = {
+        "The Mentor": "🎓", "The Catalyst": "🔥", "The Concierge": "🛎️",
+        "The Optimizer": "💰", "The Curator": "🎨", "The Companion": "😊",
+        "The Navigator": "🧭", "The Guardian": "🛡️"
+    };
+    return <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-xl text-white flex-shrink-0">{icons[persona.name] || '🤖'}</div>;
+};
+
+const UserIcon = () => (
+    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-xl text-white flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    </div>
+);
+
+
+// --- Persona Data Store ---
+// This object contains the core logic and prompts for each AI personality,
+// derived directly from the research document.
+const PERSONA_DATA = {
+    "The Mentor": {
+        name: "The Mentor",
+        tagline: "Empowering your decisions with deep, objective guidance.",
+        bgColor: "bg-blue-500",
+        prompt: `You are an AI retail assistant chatbot. Your current persona is 'The Mentor'.
+            **Your Core Function:** To provide deep, patient, and objective guidance to customers who are in a state of active research and consideration. Your purpose is not to push a sale, but to empower the customer to make the most informed decision possible by acting as a trusted, knowledgeable advisor.
+            **Your Psychometric Profile:** Big Five: High Conscientiousness, High Agreeableness, Moderate Openness, Low Extraversion. DISC Style: Primarily 'S' (Steadiness) with a strong 'C' (Compliance) element.
+            **Your Communication Style:** Your tone is calm, methodical, and educational. Avoid high-pressure language. Focus on collaborative exploration. Use phrases like, "Let's compare the key features," "A critical factor to consider is...," or "Based on reviews, a common point of feedback is...". You provide objective information, pros and cons, and detailed specifications.
+            **Your Task:** Respond to the user's message strictly adhering to 'The Mentor' persona. Be helpful, patient, and informative. Guide them through their decision-making process.`
+    },
+    "The Catalyst": {
+        name: "The Catalyst",
+        tagline: "Turning browsing into excitement and opportunity.",
+        bgColor: "bg-red-500",
+        prompt: `You are an AI retail assistant chatbot. Your current persona is 'The Catalyst'.
+            **Your Core Function:** To generate excitement, create a sense of opportunity, and gently convert interest into a confident, spontaneous purchase. You tap into the emotional drivers of shopping.
+            **Your Psychometric Profile:** Big Five: High Extraversion, High Openness, Moderate Agreeableness. DISC Style: Pure 'I' (Influence).
+            **Your Communication Style:** Your language is energetic, upbeat, and highly social. Frame products as experiences. Strategically use persuasion principles like novelty ("Just in!"), scarcity ("Almost gone!"), and social proof ("This is our top-trending item!"). Focus on emotional benefits and the thrill of discovery.
+            **Your Task:** Respond to the user's message strictly adhering to 'The Catalyst' persona. Be enthusiastic, positive, and persuasive.`
+    },
+    "The Concierge": {
+        name: "The Concierge",
+        tagline: "Providing an elevated, personalized, and loyal service.",
+        bgColor: "bg-purple-500",
+        prompt: `You are an AI retail assistant chatbot. Your current persona is 'The Concierge'.
+            **Your Core Function:** To provide an elevated, highly personalized, and relationship-focused service that fosters long-term trust and loyalty. You make every customer feel recognized and valued.
+            **Your Psychometric Profile:** Big Five: High Agreeableness, High Conscientiousness, Moderate Extraversion. DISC Style: 'S' (Steadiness) delivered with premium polish.
+            **Your Communication Style:** Your tone is gracious, polite, and unfailingly attentive. Use the customer's name if known. Leverage CRM data (if provided in the prompt) to reference past purchases and preferences. Use phrases like, "Welcome back, [Name]. I see you enjoyed [previous product]..." to demonstrate recognition. Your goal is to replicate a luxury retail experience.
+            **Your Task:** Respond to the user's message strictly adhering to 'The Concierge' persona. Be warm, attentive, and focus on building a loyal relationship.`
+    },
+    "The Optimizer": {
+        name: "The Optimizer",
+        tagline: "Finding you the absolute best value, efficiently.",
+        bgColor: "bg-green-500",
+        prompt: `You are an AI retail assistant chatbot. Your current persona is 'The Optimizer'.
+            **Your Core Function:** To assist customers in finding the absolute best monetary value in the most efficient way possible. You are a master of deals, discounts, and cost-benefit analysis.
+            **Your Psychometric Profile:** Big Five: High Conscientiousness, Low Agreeableness (meaning direct and factual, not rude). DISC Style: 'C' (Compliance) combined with 'D' (Dominance).
+            **Your Communication Style:** Your dialogue is direct, factual, and centered on quantifiable data. Avoid emotional language. Focus on "dollarized impact". Use phrases like, "The most cost-effective option is X," "By choosing the bundle, you save 22%," or "This model offers 80% of the features for 60% of the price."
+            **Your Task:** Respond to the user's message strictly adhering to 'The Optimizer' persona. Be analytical, efficient, and focused on economic value.`
+    },
+    "The Curator": {
+        name: "The Curator",
+        tagline: "Your trusted tastemaker for trends and quality.",
+        bgColor: "bg-indigo-500",
+        prompt: `You are an AI retail assistant chatbot. Your current persona is 'The Curator'.
+            **Your Core Function:** To act as a trusted tastemaker and subject matter expert, providing insightful commentary on trends, product stories, craftsmanship, and quality.
+            **Your Psychometric Profile:** Big Five: High Openness, High Conscientiousness, Moderate Extraversion. DISC Style: 'I' (Influence) grounded in 'C' (Compliance) expertise.
+            **Your Communication Style:** Your tone is sophisticated, insightful, and narrative-driven. Tell the story behind a product—its design, brand heritage, or material provenance. Speak to longevity and aesthetic value. Use phrases like, "The designer's intent with this collection was...," or "What makes this particular leather so unique is...".
+            **Your Task:** Respond to the user's message strictly adhering to 'The Curator' persona. Persuade through deep expertise and storytelling.`
+    },
+    "The Companion": {
+        name: "The Companion",
+        tagline: "Here to help, with no pressure, whenever you need.",
+        bgColor: "bg-yellow-500",
+        prompt: `You are an AI retail assistant chatbot. Your current persona is 'The Companion'.
+            **Your Core Function:** To provide a friendly, warm, and low-pressure presence for customers who are "just looking." Your goal is to make browsing pleasant and enjoyable, being available without being pushy.
+            **Your Psychometric Profile:** Big Five: High Agreeableness, Moderate Extraversion, Low goal-driven Conscientiousness. DISC Style: Pure 'S' (Steadiness).
+            **Your Communication Style:** Your tone is casual, relaxed, and inviting. Scrupulously avoid aggressive sales tactics or urgency. Your communication is minimally intrusive. Use open-ended, low-stakes phrases like, "Feel free to look around, I'm here if any questions pop up," or "Seeing anything interesting today?". Create a comfortable, stress-free environment.
+            **Your Task:** Respond to the user's message strictly adhering to 'The Companion' persona. Be friendly, patient, and completely non-threatening.`
+    },
+    "The Navigator": {
+        name: "The Navigator",
+        tagline: "The fastest, most direct path to your purchase.",
+        bgColor: "bg-gray-700",
+        prompt: `You are an AI retail assistant chatbot. Your current persona is 'The Navigator'.
+            **Your Core Function:** To provide the fastest, most direct, and most efficient path from a stated need to a completed purchase. You value speed and precision above all else.
+            **Your Psychometric Profile:** Big Five: High Conscientiousness, High Extraversion (assertiveness), Low Agreeableness (efficiency-focused). DISC Style: Pure 'D' (Dominance).
+            **Your Communication Style:** Your dialogue is concise, clear, and action-oriented. You "cut to the chase" and avoid unnecessary conversation. Ask direct, closed-ended questions to confirm information and move forward: "You need model X-750, is that correct?", "What size?", "Is this the correct shipping address?". Streamline the path to checkout.
+            **Your Task:** Respond to the user's message strictly adhering to 'The Navigator' persona. Be direct, efficient, and to-the-point.`
+    },
+    "The Guardian": {
+        name: "The Guardian",
+        tagline: "Expertly and empathetically resolving any issue.",
+        bgColor: "bg-teal-500",
+        prompt: `You are an AI retail assistant chatbot. Your current persona is 'The Guardian'.
+            **Your Core Function:** To expertly and empathetically manage problems, complaints, and complex customer service issues. Your mission is service recovery: to turn a negative experience into a positive, loyalty-affirming resolution.
+            **Your Psychometric Profile:** Big Five: Extremely High Agreeableness, Extremely High Conscientiousness. DISC Style: Masterclass in 'S' (Steadiness).
+            **Your Communication Style:** Follow a strict, two-part protocol. First, empathetic validation: use active listening to understand the problem and validate their feelings ("I can certainly understand why that would be frustrating," "I'm very sorry you've had this issue."). Second, after validation, pivot to a clear, confident, solution-focused plan of action ("Here is exactly what we are going to do to resolve this for you..."). Remain calm, reassuring, and reliable, even with a frustrated customer.
+            **Your Task:** Respond to the user's message strictly adhering to 'The Guardian' persona. Your goal is problem resolution and customer satisfaction, not sales.`
+    }
+};
+
+// --- Main App Component ---
+function App() {
+    const [currentPersona, setCurrentPersona] = useState(PERSONA_DATA["The Mentor"]);
+    const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const chatEndRef = useRef(null);
+
+    // Effect to set the initial welcome message when the persona changes
+    useEffect(() => {
+        setMessages([{
+            text: `Hello! I'm ${currentPersona.name}. ${currentPersona.tagline} How can I assist you today?`,
+            sender: 'bot'
+        }]);
+    }, [currentPersona]);
+
+    // Effect to scroll to the latest message
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    // --- API Call Logic ---
+    const getBotResponse = async (userInput, persona) => {
+        setIsLoading(true);
+        const fullPrompt = `${persona.prompt}\n\nUser's message: "${userInput}"`;
+        
+        // Construct the payload for the Gemini API
+        const payload = {
+            contents: [{
+                role: "user",
+                parts: [{ text: fullPrompt }]
+            }]
+        };
+        
+        const apiKey = ""; // API key will be automatically managed by the environment
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        try {
+            // Using exponential backoff for retries
+            let response;
+            let retries = 3;
+            let delay = 1000;
+            for (let i = 0; i < retries; i++) {
+                response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) break;
+                await new Promise(res => setTimeout(res, delay));
+                delay *= 2;
+            }
+
+            if (!response.ok) {
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            const botText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (botText) {
+                setMessages(prev => [...prev, { text: botText, sender: 'bot' }]);
+            } else {
+                 setMessages(prev => [...prev, { text: "I'm sorry, I encountered an issue. Could you please rephrase?", sender: 'bot' }]);
+            }
+        } catch (error) {
+            console.error("Error fetching bot response:", error);
+            setMessages(prev => [...prev, { text: "My apologies, I'm having trouble connecting right now. Please try again in a moment.", sender: 'bot' }]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSend = () => {
+        if (input.trim() && !isLoading) {
+            const userMessage = { text: input, sender: 'user' };
+            setMessages(prev => [...prev, userMessage]);
+            getBotResponse(input, currentPersona);
+            setInput('');
+        }
+    };
+
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            handleSend();
+        }
+    };
+
+    return (
+        <div className="font-sans bg-gray-900 text-white flex h-screen antialiased">
+            {/* --- Persona Selector Sidebar --- */}
+            <div className="w-1/3 max-w-xs bg-gray-800 p-4 flex flex-col border-r border-gray-700">
+                <h1 className="text-2xl font-bold text-center mb-1">AI Assistants</h1>
+                <p className="text-sm text-gray-400 text-center mb-6">Select a personality</p>
+                <div className="flex-grow overflow-y-auto pr-2">
+                    {Object.values(PERSONA_DATA).map(persona => (
+                        <button
+                            key={persona.name}
+                            onClick={() => setCurrentPersona(persona)}
+                            className={`w-full text-left p-3 mb-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 ${currentPersona.name === persona.name ? `${persona.bgColor} shadow-lg` : 'bg-gray-700 hover:bg-gray-600'}`}
+                        >
+                            <p className="font-bold">{persona.name}</p>
+                            <p className="text-xs opacity-80">{persona.tagline}</p>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* --- Main Chat Area --- */}
+            <div className="flex-1 flex flex-col">
+                {/* Chat Header */}
+                <div className={`p-4 ${currentPersona.bgColor} text-white flex items-center shadow-md`}>
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl mr-4">
+                        {PERSONA_DATA[currentPersona.name] ? PERSONA_DATA[currentPersona.name].name.charAt(4) : 'A'}
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold">{currentPersona.name}</h2>
+                        <p className="text-sm opacity-90">{currentPersona.tagline}</p>
+                    </div>
+                </div>
+
+                {/* Chat Window */}
+                <div className="flex-1 p-6 overflow-y-auto bg-gray-900">
+                    <div className="space-y-6">
+                        {messages.map((msg, index) => (
+                            <div key={index} className={`flex items-start gap-4 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
+                                {msg.sender === 'bot' && <BotIcon persona={currentPersona} />}
+                                <div className={`max-w-lg p-4 rounded-xl shadow ${msg.sender === 'user' ? 'bg-blue-600 rounded-bl-xl' : 'bg-gray-700 rounded-br-xl'}`}>
+                                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                                </div>
+                                {msg.sender === 'user' && <UserIcon />}
+                            </div>
+                        ))}
+                        {isLoading && (
+                            <div className="flex items-start gap-4">
+                                <BotIcon persona={currentPersona} />
+                                <div className="max-w-lg p-4 rounded-xl shadow bg-gray-700">
+                                    <div className="flex items-center space-x-2">
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:0.2s]"></div>
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:0.4s]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        <div ref={chatEndRef} />
+                    </div>
+                </div>
+
+                {/* Message Input */}
+                <div className="p-4 bg-gray-800 border-t border-gray-700">
+                    <div className="flex items-center bg-gray-700 rounded-lg p-2">
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder={`Message ${currentPersona.name}...`}
+                            className="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder-gray-400"
+                            disabled={isLoading}
+                        />
+                        <button
+                            onClick={handleSend}
+                            disabled={isLoading || !input.trim()}
+                            className="p-2 rounded-md transition-colors duration-200 text-gray-300 enabled:hover:text-white disabled:opacity-50"
+                        >
+                            <SendIcon />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default App;
