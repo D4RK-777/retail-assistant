@@ -9,7 +9,7 @@ import KnowledgeBase from './pages/KnowledgeBase';
 import AITrainingPage from './pages/AITraining';
 import AIPersonalities from './pages/AIPersonalities';
 import Settings from './pages/Settings';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './components/ProtectedRoute.tsx';
 import './App.css';
 
 function App() {
@@ -18,13 +18,55 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/setup" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/knowledge" element={<KnowledgeBase />} />
-          <Route path="/training" element={<AITrainingPage />} />
-          <Route path="/personalities" element={<AIPersonalities />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/" element={<AIPersonalities />} />
+          <Route 
+            path="/setup" 
+            element={
+              <ProtectedRoute requireAuth={true} requireOrg={false}>
+                <OrganizationSetupPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute requireAuth={true} requireOrg={true}>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/knowledge" 
+            element={
+              <ProtectedRoute requireAuth={true} requireOrg={true}>
+                <KnowledgeBase />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/training" 
+            element={
+              <ProtectedRoute requireAuth={true} requireOrg={true}>
+                <AITrainingPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/personalities" 
+            element={
+              <ProtectedRoute requireAuth={true} requireOrg={true}>
+                <AIPersonalities />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute requireAuth={true} requireOrg={true}>
+                <Settings />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
         <Toaster />
       </Router>

@@ -33,7 +33,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: any }>;
-  createOrganization: (name: string, slug: string) => Promise<{ error: any }>;
+  createOrganization: (name: string, slug: string, description: string, website: string) => Promise<{ error: any }>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

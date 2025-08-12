@@ -8,13 +8,18 @@ export default function OrganizationSetupPage() {
   const { user, organization, loading } = useAuth();
 
   useEffect(() => {
+    console.log("OrganizationSetupPage useEffect triggered:");
+    console.log("  loading:", loading);
+    console.log("  user:", user);
+    console.log("  organization:", organization);
+
     if (!loading) {
       if (!user) {
-        console.log('SETUP: No user, redirecting to login');
-        navigate('/login', { replace: true });
-      } else if (user && organization) {
-        console.log('SETUP: Organization exists, redirecting to dashboard');
-        navigate('/dashboard', { replace: true });
+        console.log("  Navigating to /login (no user).");
+        navigate("/login");
+      } else if (user) {
+        console.log("  Navigating to /dashboard (user exists, bypassing organization setup).");
+        navigate("/dashboard");
       }
     }
   }, [user, organization, loading, navigate]);

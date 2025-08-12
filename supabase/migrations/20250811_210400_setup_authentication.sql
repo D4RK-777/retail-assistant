@@ -5,7 +5,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create organizations table (for retail stores)
-CREATE TABLE IF NOT EXISTS public.organizations (
+CREATE TABLE IF NOT EXISTS public.assistants_organizations (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
@@ -20,9 +20,9 @@ CREATE TABLE IF NOT EXISTS public.organizations (
 );
 
 -- Create user profiles table (extends auth.users)
-CREATE TABLE IF NOT EXISTS public.user_profiles (
+CREATE TABLE IF NOT EXISTS public.assistants_user_profiles (
   id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
+  organization_id UUID REFERENCES public.assistants_organizations(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   full_name TEXT,
   avatar_url TEXT,
@@ -34,9 +34,9 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
 );
 
 -- Create organization invitations table
-CREATE TABLE IF NOT EXISTS public.organization_invitations (
+CREATE TABLE IF NOT EXISTS public.assistants_organization_invitations (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES public.assistants_organizations(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   role TEXT DEFAULT 'member' CHECK (role IN ('admin', 'member', 'viewer')),
   invited_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -48,31 +48,31 @@ CREATE TABLE IF NOT EXISTS public.organization_invitations (
 
 -- Add organization_id to assistant tables for multi-tenancy
 ALTER TABLE public.assistant_scraped_pages 
-ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.assistants_organizations(id) ON DELETE CASCADE;
 
 ALTER TABLE public.assistant_content_chunks 
-ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.assistants_organizations(id) ON DELETE CASCADE;
 
 ALTER TABLE public.assistant_ai_training_sessions 
-ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.assistants_organizations(id) ON DELETE CASCADE;
 
 ALTER TABLE public.assistant_user_interactions 
-ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.assistants_organizations(id) ON DELETE CASCADE;
 
 -- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_user_profiles_organization_id ON public.user_profiles(organization_id);
-CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON public.user_profiles(email);
-CREATE INDEX IF NOT EXISTS idx_organization_invitations_token ON public.organization_invitations(token);
-CREATE INDEX IF NOT EXISTS idx_organization_invitations_email ON public.organization_invitations(email);
+CREATE INDEX IF NOT EXISTS idx_assistants_user_profiles_organization_id ON public.assistants_user_profiles(organization_id);
+CREATE INDEX IF NOT EXISTS idx_assistants_user_profiles_email ON public.assistants_user_profiles(email);
+CREATE INDEX IF NOT EXISTS idx_assistants_organization_invitations_token ON public.assistants_organization_invitations(token);
+CREATE INDEX IF NOT EXISTS idx_assistants_organization_invitations_email ON public.assistants_organization_invitations(email);
 CREATE INDEX IF NOT EXISTS idx_assistant_scraped_pages_org ON public.assistant_scraped_pages(organization_id);
 CREATE INDEX IF NOT EXISTS idx_assistant_content_chunks_org ON public.assistant_content_chunks(organization_id);
 CREATE INDEX IF NOT EXISTS idx_assistant_ai_training_sessions_org ON public.assistant_ai_training_sessions(organization_id);
 CREATE INDEX IF NOT EXISTS idx_assistant_user_interactions_org ON public.assistant_user_interactions(organization_id);
 
 -- Enable RLS on all tables
-ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.organization_invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assistants_organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assistants_user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assistants_organization_invitations ENABLE ROW LEVEL SECURITY;
 
 -- Update RLS policies for assistant tables to include organization filtering
 DROP POLICY IF EXISTS "Allow public read access to assistant_scraped_pages" ON public.assistant_scraped_pages;
@@ -86,129 +86,86 @@ DROP POLICY IF EXISTS "Anyone can update assistant_ai_training_sessions" ON publ
 DROP POLICY IF EXISTS "Allow public access to assistant_user_interactions" ON public.assistant_user_interactions;
 
 -- Create RLS policies for organizations
-CREATE POLICY "Users can view their organization" 
-ON public.organizations 
-FOR SELECT 
-USING (
-  id IN (
-    SELECT organization_id 
-    FROM public.user_profiles 
-    WHERE id = auth.uid()
-  )
-);
+CREATE POLICY "Users can view their organization"
+ON public.assistants_organizations
+FOR SELECT
+USING (id = (SELECT public.get_user_organization()));
 
-CREATE POLICY "Organization owners can update their organization" 
-ON public.organizations 
-FOR UPDATE 
-USING (
-  id IN (
-    SELECT organization_id 
-    FROM public.user_profiles 
-    WHERE id = auth.uid() AND role = 'owner'
-  )
-);
+CREATE POLICY "Organization owners can update their organization"
+ON public.assistants_organizations
+FOR UPDATE
+USING (id = (SELECT public.get_user_organization()) AND (SELECT public.is_user_admin()));
 
 -- Create RLS policies for user profiles
-CREATE POLICY "Users can view profiles in their organization" 
-ON public.user_profiles 
-FOR SELECT 
-USING (
-  organization_id IN (
-    SELECT organization_id 
-    FROM public.user_profiles 
-    WHERE id = auth.uid()
-  )
-);
-
-CREATE POLICY "Users can update their own profile" 
-ON public.user_profiles 
-FOR UPDATE 
+CREATE POLICY "Users can view their own profile"
+ON public.assistants_user_profiles
+FOR SELECT
 USING (id = auth.uid());
 
-CREATE POLICY "Admins can manage profiles in their organization" 
-ON public.user_profiles 
-FOR ALL 
+CREATE POLICY "Users can view profiles in their organization"
+ON public.assistants_user_profiles
+FOR SELECT
+USING (organization_id = (SELECT public.get_user_organization()));
+
+CREATE POLICY "Users can update their own profile"
+ON public.assistants_user_profiles
+FOR UPDATE
+USING (id = auth.uid());
+
+CREATE POLICY "Admins can manage profiles in their organization"
+ON public.assistants_user_profiles
+FOR ALL
 USING (
-  organization_id IN (
-    SELECT organization_id 
-    FROM public.user_profiles 
-    WHERE id = auth.uid() AND role IN ('owner', 'admin')
-  )
+  organization_id = (SELECT public.get_user_organization())
+  AND
+  (SELECT public.is_user_admin())
 );
 
 -- Create RLS policies for organization invitations
-CREATE POLICY "Users can view invitations for their organization" 
-ON public.organization_invitations 
-FOR SELECT 
+CREATE POLICY "Users can view invitations for their organization"
+ON public.assistants_organization_invitations
+FOR SELECT
 USING (
-  organization_id IN (
-    SELECT organization_id 
-    FROM public.user_profiles 
-    WHERE id = auth.uid() AND role IN ('owner', 'admin')
-  )
+  organization_id = (SELECT public.get_user_organization())
+  AND
+  (SELECT public.is_user_admin())
 );
 
-CREATE POLICY "Admins can manage invitations for their organization" 
-ON public.organization_invitations 
-FOR ALL 
+CREATE POLICY "Admins can manage invitations for their organization"
+ON public.assistants_organization_invitations
+FOR ALL
 USING (
-  organization_id IN (
-    SELECT organization_id 
-    FROM public.user_profiles 
-    WHERE id = auth.uid() AND role IN ('owner', 'admin')
-  )
+  organization_id = (SELECT public.get_user_organization())
+  AND
+  (SELECT public.is_user_admin())
 );
 
 -- Create new RLS policies for assistant tables with organization filtering
-CREATE POLICY "Users can access assistant_scraped_pages for their organization" 
-ON public.assistant_scraped_pages 
-FOR ALL 
-USING (
-  organization_id IN (
-    SELECT organization_id 
-    FROM public.user_profiles 
-    WHERE id = auth.uid()
-  )
-);
+CREATE POLICY "Users can access assistant_scraped_pages for their organization"
+ON public.assistant_scraped_pages
+FOR ALL
+USING (organization_id = (SELECT public.get_user_organization()));
 
-CREATE POLICY "Users can access assistant_content_chunks for their organization" 
-ON public.assistant_content_chunks 
-FOR ALL 
-USING (
-  organization_id IN (
-    SELECT organization_id 
-    FROM public.user_profiles 
-    WHERE id = auth.uid()
-  )
-);
+CREATE POLICY "Users can access assistant_content_chunks for their organization"
+ON public.assistant_content_chunks
+FOR ALL
+USING (organization_id = (SELECT public.get_user_organization()));
 
-CREATE POLICY "Users can access assistant_ai_training_sessions for their organization" 
-ON public.assistant_ai_training_sessions 
-FOR ALL 
-USING (
-  organization_id IN (
-    SELECT organization_id 
-    FROM public.user_profiles 
-    WHERE id = auth.uid()
-  )
-);
+CREATE POLICY "Users can access assistant_ai_training_sessions for their organization"
+ON public.assistant_ai_training_sessions
+FOR ALL
+USING (organization_id = (SELECT public.get_user_organization()));
 
-CREATE POLICY "Users can access assistant_user_interactions for their organization" 
-ON public.assistant_user_interactions 
-FOR ALL 
-USING (
-  organization_id IN (
-    SELECT organization_id 
-    FROM public.user_profiles 
-    WHERE id = auth.uid()
-  )
-);
+CREATE POLICY "Users can access assistant_user_interactions for their organization"
+ON public.assistant_user_interactions
+FOR ALL
+USING (organization_id = (SELECT public.get_user_organization()));
 
 -- Create functions for user management
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.user_profiles (id, email, full_name, avatar_url)
+  INSERT INTO public.assistants_user_profiles (id, email, full_name, avatar_url)
   VALUES (
     NEW.id,
     NEW.email,
@@ -231,7 +188,7 @@ RETURNS UUID AS $$
 BEGIN
   RETURN (
     SELECT organization_id 
-    FROM public.user_profiles 
+    FROM public.assistants_user_profiles 
     WHERE id = auth.uid()
   );
 END;
@@ -243,17 +200,17 @@ RETURNS BOOLEAN AS $$
 BEGIN
   RETURN (
     SELECT role IN ('owner', 'admin')
-    FROM public.user_profiles 
+    FROM public.assistants_user_profiles 
     WHERE id = auth.uid()
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Add helpful comments
-COMMENT ON TABLE public.organizations IS 'Retail store organizations that use the AI assistant platform';
-COMMENT ON TABLE public.user_profiles IS 'Extended user profiles linked to auth.users with organization membership';
-COMMENT ON TABLE public.organization_invitations IS 'Pending invitations for users to join organizations';
-COMMENT ON COLUMN public.organizations.subscription_plan IS 'Subscription tier: free, basic, premium, enterprise';
-COMMENT ON COLUMN public.user_profiles.role IS 'User role within organization: owner, admin, member, viewer';
+COMMENT ON TABLE public.assistants_organizations IS 'Retail store organizations that use the AI assistant platform';
+COMMENT ON TABLE public.assistants_user_profiles IS 'Extended user profiles linked to auth.users with organization membership';
+COMMENT ON TABLE public.assistants_organization_invitations IS 'Pending invitations for users to join organizations';
+COMMENT ON COLUMN public.assistants_organizations.subscription_plan IS 'Subscription tier: free, basic, premium, enterprise';
+COMMENT ON COLUMN public.assistants_user_profiles.role IS 'User role within organization: owner, admin, member, viewer';
 COMMENT ON FUNCTION public.get_user_organization() IS 'Returns the organization ID for the current authenticated user';
 COMMENT ON FUNCTION public.is_user_admin() IS 'Returns true if the current user is an owner or admin';

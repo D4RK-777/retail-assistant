@@ -14,12 +14,8 @@ port = 54322
 enabled = true
 port = 54323
 
-[ingest]
-enabled = false
-
 [auth]
 enabled = true
-port = 54324
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["https://jqaqkymjacdnllytexou.supabase.co"]
 

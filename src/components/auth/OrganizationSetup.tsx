@@ -72,7 +72,7 @@ export function OrganizationSetup({ onComplete }: OrganizationSetupProps) {
     setError(null);
 
     try {
-      const { error } = await createOrganization(orgData.name, orgData.slug);
+      const { error } = await createOrganization(orgData.name, orgData.slug, orgData.description, orgData.website);
       
       if (error) {
         if (error.message.includes('duplicate key')) {

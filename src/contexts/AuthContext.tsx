@@ -50,23 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (session?.user) {
           await loadUserProfile(session.user.id);
-          
-          // AUTO-CREATE FAKE ORGANIZATION TO BYPASS BROKEN SETUP
-          if (!organization) {
-            console.log('AUTO-CREATING: Fake organization to bypass broken setup');
-            const fakeOrg = {
-              id: 'auto-org-' + session.user.id,
-              name: 'Auto Organization',
-              slug: 'auto-org',
-              description: 'Automatically created organization',
-              website: null,
-              logo_url: null,
-              subscription_plan: 'free',
-              max_users: 10,
-              max_knowledge_items: 100
-            };
-            setOrganization(fakeOrg);
-          }
         } else {
           setLoading(false);
         }
@@ -97,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadUserProfile = async (userId: string) => {
     try {
       const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
+        .from('assistants_user_profiles')
         .select('*')
         .eq('id', userId)
         .single();
@@ -113,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (profileData.organization_id) {
         const { data: orgData, error: orgError } = await supabase
-          .from('organizations')
+          .from('assistants_organizations')
           .select('*')
           .eq('id', profileData.organization_id)
           .single();
@@ -156,20 +139,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    // Clear local state
-    setUser(null);
-    setProfile(null);
-    setOrganization(null);
-    setSession(null);
+    console.log('Attempting to sign out...');
+    setLoading(true);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error.message);
+    } else {
+      console.log('Successfully signed out from Supabase.');
+      // Clear local state
+      setUser(null);
+      setProfile(null);
+      setOrganization(null);
+      setSession(null);
+    }
     setLoading(false);
+    // Removed manual window.location redirect; routing will be handled by caller (e.g., Layout) and ProtectedRoute
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return { error: new Error('No user logged in') };
 
     const { error } = await supabase
-      .from('user_profiles')
+      .from('assistants_user_profiles')
       .update(updates)
       .eq('id', user.id);
 
@@ -180,28 +171,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const createOrganization = async (name: string, slug: string) => {
+  const createOrganization = async (name: string, slug: string, description?: string, website?: string) => {
     if (!user) return { error: new Error('No user logged in') };
 
+    const orgInsert: any = { name, slug };
+    if (description) orgInsert.description = description;
+    if (website) orgInsert.website = website;
+
+    console.log('Attempting to insert organization:', orgInsert);
     const { data: orgData, error: orgError } = await supabase
-      .from('organizations')
-      .insert({ name, slug })
+      .from('assistants_organizations')
+      .insert(orgInsert)
       .select()
       .single();
 
-    if (orgError) return { error: orgError };
+    if (orgError) {
+      console.error('Error inserting organization:', orgError);
+      return { error: orgError };
+    }
+    console.log('Organization inserted successfully:', orgData);
 
+    console.log('Attempting to update user profile with organization_id:', orgData.id);
     const { error: profileError } = await supabase
-      .from('user_profiles')
+      .from('assistants_user_profiles')
       .update({
         organization_id: orgData.id,
         role: 'owner',
       })
       .eq('id', user.id);
 
-    if (profileError) return { error: profileError };
+    if (profileError) {
+      console.error('Error updating user profile:', profileError);
+      return { error: profileError };
+    }
+    console.log('User profile updated successfully.');
 
+    console.log('Loading user profile...');
     await loadUserProfile(user.id);
+    setOrganization(orgData);
+    console.log('User profile loaded.');
     return { error: null };
   };
 

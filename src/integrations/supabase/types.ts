@@ -180,7 +180,7 @@ export type Database = {
         }
         Relationships: []
       }
-      organizations: {
+      assistants_organizations: {
         Row: {
           created_at: string
           description: string | null
@@ -222,7 +222,7 @@ export type Database = {
         }
         Relationships: []
       }
-      organization_invitations: {
+      assistants_organization_invitations: {
         Row: {
           accepted_at: string | null
           created_at: string
@@ -258,7 +258,7 @@ export type Database = {
         }
         Relationships: []
       }
-      user_profiles: {
+      assistants_user_profiles: {
         Row: {
           avatar_url: string | null
           created_at: string

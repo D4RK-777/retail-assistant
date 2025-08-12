@@ -41,16 +41,22 @@ export default function ProtectedRoute({ children, requireAuth, requireOrg }: Pr
     return <Navigate to="/login" replace />;
   }
 
-  // DISABLED: Organization requirement causing infinite redirects
+  // TEMPORARY BYPASS: Skip organization requirement completely
   // if (requireOrg && user && !organization) {
   //   console.log('PROTECTED ROUTE: Redirecting to /setup - no organization');
   //   return <Navigate to="/setup" replace />;
   // }
 
-  // If user is authenticated but trying to access login, redirect to dashboard
-  if (user && window.location.pathname === '/login') {
-    console.log('PROTECTED ROUTE: Redirecting to /dashboard - user authenticated');
+  // If user is authenticated and has organization, but trying to access login/setup, redirect to dashboard
+  if (user && organization && (window.location.pathname === '/login' || window.location.pathname === '/setup')) {
+    console.log('PROTECTED ROUTE: Redirecting to /dashboard - user fully authenticated');
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // If user is authenticated but no organization and trying to access login, redirect to setup
+  if (user && !organization && window.location.pathname === '/login') {
+    console.log('PROTECTED ROUTE: Redirecting to /setup - user needs organization');
+    return <Navigate to="/setup" replace />;
   }
 
   return <>{children}</>;
