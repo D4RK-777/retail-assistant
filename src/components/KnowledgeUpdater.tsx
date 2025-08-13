@@ -124,69 +124,66 @@ This is the COMPLETE official Meta WhatsApp Business API specification as of 202
         
         {
           id: crypto.randomUUID(),
-          title: 'flEX Platform Template Editor and Meta Integration',
-          content: `# flEX Platform Template Editor and Meta Integration
+          title: 'Retail Customer Service Best Practices',
+          content: `# Retail Customer Service Best Practices
 
-## flEX PLATFORM NAVIGATION:
-- **Templates Section**: Main editing hub in left navigation menu
-- **Campaign Dashboard**: "Send Campaign" section for active campaigns
-- **Journey Builder**: Multi-step automation sequences
-- **Contacts Management**: CSV import and segmentation tools
-- **Analytics Dashboard**: Performance tracking and reporting
+## CUSTOMER SERVICE FUNDAMENTALS:
+- **Product Knowledge**: Comprehensive understanding of inventory and features
+- **Order Management**: Processing orders, modifications, and cancellations
+- **Returns & Exchanges**: Handling return policies and exchange procedures
+- **Customer Communication**: Professional and helpful interaction guidelines
+- **Problem Resolution**: Effective troubleshooting and solution finding
 
-## TEMPLATE EDITOR INTERFACE:
-- **Header Section**: Media (images, videos, documents) or text (60 chars max)
-- **Message Content**: Main body with placeholders like {first_name} (1,024 chars max)
-- **Buttons Section**: Interactive elements (maximum 3 buttons)
-- **Footer Section**: Additional text (60 characters maximum)
+## CUSTOMER INTERACTION GUIDELINES:
+- **Greeting Customers**: Warm, professional welcome and assistance offers
+- **Product Recommendations**: Personalized suggestions based on customer needs
+- **Order Support**: Help with product selection, sizing, and availability
+- **Payment Assistance**: Support with payment methods and transaction issues
+- **Follow-up Service**: Post-purchase support and satisfaction checks
 
-## flEX TEMPLATE CREATION PROCESS:
-1. Navigate to "Templates" in left navigation menu
-2. Click "New Template" button
-3. Select "Meta Template" option  
-4. Configure Header, Content, Buttons, Footer sections
-5. Use real-time WhatsApp preview simulation
-6. Submit for Meta approval (24-48 hours required)
-7. Monitor status in template library
+## RETAIL OPERATIONS SUPPORT:
+1. Check product availability and stock levels
+2. Provide accurate pricing and promotion information
+3. Assist with store policies and procedures
+4. Help with shipping and delivery inquiries
+5. Support warranty and service questions
+6. Handle customer feedback and complaints
+7. Process loyalty program inquiries
 
-## flEX BUTTON CONFIGURATION:
-- **CTA Buttons Available**: "Open Web Page", "Trigger Phone Call"
-- **Journey Buttons**: Connect to automated flEX sequences
-- **CRITICAL flEX RULE**: Journey buttons automatically remove ALL CTA buttons
-- **Meta Policy Enforcement**: flEX editor prevents invalid button combinations
-- **Button Text Limit**: 20 characters per button (enforced by flEX)
+## PRODUCT INFORMATION MANAGEMENT:
+- **Inventory Details**: Stock levels, product specifications, and availability
+- **Pricing Information**: Current prices, discounts, and promotional offers
+- **Product Features**: Detailed descriptions, benefits, and use cases
+- **Compatibility**: Product compatibility and recommendation matching
+- **Care Instructions**: Maintenance, warranty, and usage guidelines
 
-## flEX PERSONALIZATION SYSTEM:
-- **Available Placeholders**: {first_name}, {last_name}, {company}, {custom_field_1}, etc.
-- **Contact Data Matching**: Placeholders must match imported contact fields
-- **CSV Import Template**: Download from platform for proper field mapping
-- **International Format**: Phone numbers must use +15551234567 format
+## CUSTOMER DATA MANAGEMENT:
+- **Purchase History**: Previous orders and customer preferences
+- **Customer Preferences**: Style, size, brand, and category preferences
+- **Communication History**: Previous interactions and support tickets
+- **Loyalty Information**: Points, rewards, and membership benefits
+- **Contact Information**: Preferred communication methods and timing
 
-## CAMPAIGN MANAGEMENT:
-- **Campaign Types**: Promotional, customer acquisition, traffic driving, CLV enhancement
-- **Audience Targeting**: Segmentation by engagement, location, demographics
-- **Geo-targeting**: Location-based offer distribution
-- **Template Library**: Browse existing templates like "end_of_season_sale", "warm_up_campaign"
+## ORDER MANAGEMENT:
+- **Order Processing**: New orders, modifications, and special requests
+- **Shipping Information**: Delivery options, tracking, and estimated arrival
+- **Order Status**: Current status updates and progress tracking
+- **Payment Processing**: Payment methods, billing, and transaction support
+- **Order History**: Previous purchases and reorder assistance
 
-## flEX ANALYTICS INTEGRATION:
-- **Read Rates**: 75%+ typical performance tracking
-- **Click-through Rates**: Real-time conversion monitoring  
-- **A/B Testing**: Template and timing optimization
-- **ROI Measurement**: Revenue attribution and performance reporting
-- **Conversion Tracking**: From clicks to completed actions
+## CUSTOMER SATISFACTION:
+- **Response Time**: Quick and efficient customer service responses
+- **Problem Resolution**: Effective solutions and follow-up support
+- **Personalization**: Tailored service based on customer preferences
+- **Feedback Collection**: Gathering and acting on customer feedback
+- **Continuous Improvement**: Regular service quality enhancement
 
-## REAL-TIME FEATURES:
-- **Live Preview**: Exact WhatsApp message appearance during editing
-- **Template Status Monitoring**: Active, Pending, Rejected, Paused status tracking
-- **Campaign Performance**: Real-time delivery and engagement metrics
-- **Multi-Channel Support**: Connect multiple WhatsApp numbers to same account
-
-This covers the complete flEX platform integration with Meta's WhatsApp Business API.`,
-          category: 'flex_platform_core',
-          content_type: 'platform_guide',
+This covers comprehensive retail customer service and operations management.`,
+          category: 'retail_operations',
+          content_type: 'service_guide',
           knowledge_level: 'intermediate',
           importance_score: 10,
-          tags: ['flex-platform', 'template-editor', 'navigation', 'campaigns', 'personalization', 'analytics', 'meta-integration']
+          tags: ['customer-service', 'retail-operations', 'order-management', 'product-support', 'customer-satisfaction']
         },
 
         {

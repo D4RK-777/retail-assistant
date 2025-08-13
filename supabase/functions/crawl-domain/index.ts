@@ -131,6 +131,9 @@ serve(async (req: Request) => {
           }
         })
 
+        // Get user's organization ID
+        const { data: orgData } = await supabase.rpc('get_user_organization');
+        
         // Save to database
         const scrapedContent = {
           url: currentUrl,
@@ -138,11 +141,12 @@ serve(async (req: Request) => {
           content: textContent,
           description,
           links,
+          organization_id: orgData,
           scraped_at: new Date().toISOString()
         }
 
         const { error } = await supabase
-          .from('scraped_pages')
+          .from('assistant_scraped_pages')
           .upsert(scrapedContent, { onConflict: 'url' })
 
         if (error) {

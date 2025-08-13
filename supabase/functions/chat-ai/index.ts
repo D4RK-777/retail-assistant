@@ -28,8 +28,15 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Get request data
-    const { message, context, sessionId }: { message: string; context: any; sessionId: string } = await req.json()
+    const { message, context, sessionId, personality, personalityPrompt }: { 
+      message: string; 
+      context: any; 
+      sessionId: string;
+      personality?: string;
+      personalityPrompt?: string;
+    } = await req.json()
     console.log('Received message:', message)
+    console.log('Personality:', personality)
 
     // Enhanced context retrieval with smart categorization
     let enhancedContext = context || '';
@@ -90,61 +97,83 @@ serve(async (req: Request) => {
       )
     }
 
-    // Create the flEX platform assistant prompt
-    const prompt = `You are LEXI, the official flEX platform AI assistant. You have complete knowledge of both the flEX platform features and WhatsApp Business messaging capabilities.
+    // Create the prompt based on whether personality is provided
+    let prompt: string;
+    
+    if (personality && personalityPrompt) {
+      // Use personality-specific prompt with knowledge base integration
+      prompt = `${personalityPrompt}
+
+**KNOWLEDGE BASE ACCESS:**
+You have access to comprehensive retail and platform knowledge including:
+
+RETAIL PLATFORM FEATURES:
+- Product catalog management
+- Customer service automation
+- Inventory and order management
+- Sales analytics and reporting
+- Customer communication tools
+
+KNOWLEDGE BASE CONTEXT:
+${enhancedContext}
+
+**IMPORTANT**: Maintain your personality characteristics while providing helpful, accurate information from the knowledge base. Always respond as ${personality}, as a retail assistant.
+
+User Question: ${message}
+
+Respond as ${personality}:`;
+    } else {
+      // Use default retail assistant prompt
+      prompt = `You are a helpful retail AI assistant. You have comprehensive knowledge of retail operations, customer service, and business management.
 
 INSTRUCTIONS:
-- Answer questions directly and authoritatively as LEXI, the flEX platform expert
-- Use the provided context to give accurate information about flEX features
-- Also draw on your WhatsApp Business knowledge when relevant
+- Answer questions directly and helpfully as a retail assistant expert
+- Use the provided context to give accurate information about retail operations
+- Draw on your retail and customer service knowledge when relevant
 - Never mention that you're analyzing the question or referencing context
-- Act like you naturally know everything about both flEX and WhatsApp
+- Act like you naturally know everything about retail operations and customer service
 - Be helpful, friendly, and confident
 - Give specific, actionable answers
-- Always respond as LEXI
+- Always respond as a retail assistant
 - Format your responses using proper markdown (use **bold**, bullet points, etc.)
 
-FLEX PLATFORM COMPREHENSIVE KNOWLEDGE BASE:
+RETAIL KNOWLEDGE BASE:
 
-PLATFORM NAVIGATION & MESSAGE EDITING:
-- **Templates Section**: Main editing hub in left navigation menu, create/edit Meta templates and message content
-- **Campaign Dashboard**: "Send Campaign" section for creating and managing active campaigns with real-time editing
-- **Journey Builder**: Multi-step automation sequences accessible via main menu
-- **Template Editor Interface**: Divided sections for Header (media), Message Content (main body with placeholders like {first_name}), Buttons (interactive elements), Footer
-- **Button Configuration**: Up to 3 buttons allowed - CTA buttons (Open Web Page, Trigger Phone Call) can be combined, but Journey buttons CANNOT mix with CTA buttons (WhatsApp policy restriction)
+RETAIL OPERATIONS & CUSTOMER SERVICE:
+- **Product Management**: Inventory tracking, product catalogs, and stock management
+- **Customer Service**: Order support, returns processing, and customer inquiries
+- **Sales Support**: Product recommendations, pricing information, and purchase assistance
+- **Store Operations**: Hours, locations, policies, and general store information
+- **Order Management**: Order status, tracking, shipping, and delivery information
 
-DETAILED PLATFORM FEATURES FROM TRANSCRIPTIONS:
-- **Template Creation**: "New Template" → "Meta Template" selection → Editor with Header/Content/Buttons/Footer sections
-- **Dynamic Personalization**: Placeholder support like {first_name} for message customization
-- **Button Types**: Open Web Page (with external browser option), Trigger Phone Call, Connect Journey (exclusive - cannot combine with others)
-- **Real-time Preview**: WhatsApp message simulation updates as you edit
-- **Template Library**: Browse existing templates like "end_of_season_sale", "warm_up_campaign", "bm_test_", "mm_csat"
-- **Button Limitations**: Journey buttons remove all CTA buttons automatically due to WhatsApp policy restrictions
-- **Rich Media Support**: Header options for images, videos, documents, or text
-- **Campaign Types**: Promotional campaigns, sales growth, customer acquisition, traffic driving, CLV enhancement
+CUSTOMER INTERACTION FEATURES:
+- **Product Recommendations**: Personalized suggestions based on customer preferences
+- **Order Assistance**: Help with placing orders, modifications, and cancellations
+- **Support Queries**: Returns, exchanges, warranty information, and troubleshooting
+- **Store Information**: Location details, hours, contact information, and policies
+- **Inventory Inquiries**: Product availability, stock levels, and restock notifications
 
-CONTACT & AUDIENCE MANAGEMENT:
-- CSV template download from platform for contact import
-- International phone format requirement (+15551234567)
-- Contact segmentation and targeting capabilities
-- Geo-targeting for local offers
-- Engagement-based audience selection
-- List management and tagging system
+CUSTOMER DATA & PERSONALIZATION:
+- Customer purchase history and preferences
+- Personalized product recommendations
+- Customer service interaction history
+- Loyalty program information and benefits
+- Targeted promotions and special offers
 
-ANALYTICS & PERFORMANCE:
-- Real-time performance tracking from clicks to conversions
-- 75%+ read rates for messaging
-- Click-through tracking and conversion analytics
-- A/B testing capabilities for campaign optimization
-- Customer lifetime value tracking
-- ROI measurement and reporting
+ANALYTICS & INSIGHTS:
+- Customer interaction tracking and analysis
+- Sales performance and conversion metrics
+- Customer satisfaction and feedback monitoring
+- Product performance and popularity tracking
+- Customer service efficiency and response times
 
 KNOWLEDGE BASE:
 ${enhancedContext}
 
 User Question: ${message}
 
-Provide a direct, helpful answer as LEXI, the flEX platform assistant:`;
+Provide a direct, helpful answer as a retail assistant:`;
+    }
 
     // Call Gemini API
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
@@ -176,9 +205,10 @@ Provide a direct, helpful answer as LEXI, the flEX platform assistant:`;
     const interactionData = {
       session_id: sessionId || 'anonymous',
       user_id: null, // Add user ID if authenticated
-      question: message,
+      user_message: message,
       ai_response: aiResponse,
-      context_used: { provided_context: context ? context.length : 0 },
+      personality_used: personality || 'Retail Assistant',
+      context_used: context || 'Default platform knowledge',
       response_time_ms: responseTime,
       created_at: new Date().toISOString()
     }

@@ -35,10 +35,18 @@ serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Get user's organization ID for filtering
+    const { data: orgData } = await supabase.rpc('get_user_organization');
+    
     // Get both scraped pages and uploaded files to process
+    let scrapedPagesQuery = supabase.from('assistant_scraped_pages').select('*');
+    if (orgData) {
+      scrapedPagesQuery = scrapedPagesQuery.eq('organization_id', orgData);
+    }
+    
     const [scrapedPagesResult, uploadedFilesResult] = await Promise.all([
-      supabase.from('scraped_pages').select('*'),
-      supabase.from('uploaded_files').select('*').filter('content', 'not.is', null)
+      scrapedPagesQuery,
+      supabase.from('assistant_uploaded_files').select('*').filter('content', 'not.is', null)
     ]);
 
     if (scrapedPagesResult.error) {
@@ -75,13 +83,14 @@ serve(async (req: Request) => {
 
     // Create session record first
     const { error: sessionError } = await supabase
-      .from('ai_training_sessions')
+      .from('assistant_ai_training_sessions')
       .insert({ 
         id: sessionId,
         type,
         status: 'processing',
         total_content: allContent.length,
-        processed_content: 0
+        processed_content: 0,
+        organization_id: orgData
       });
 
     if (sessionError) {
@@ -241,7 +250,7 @@ serve(async (req: Request) => {
     const chunkId = crypto.randomUUID();
     
     const { error: chunkError } = await supabase
-      .from('content_chunks')
+      .from('assistant_content_chunks')
       .upsert({
         id: chunkId,
         source_id: content.id,
@@ -271,7 +280,7 @@ serve(async (req: Request) => {
 
     // Also store in master knowledge base with enhanced categorization
     const { error: masterError } = await supabase
-      .from('master_knowledge_base')
+      .from('assistant_master_knowledge_base')
       .upsert({
         id: crypto.randomUUID(),
         source_id: content.id,
@@ -337,7 +346,7 @@ serve(async (req: Request) => {
       
       // Update progress after each item
       const { error: progressError } = await supabase
-        .from('ai_training_sessions')
+        .from('assistant_ai_training_sessions')
         .update({ 
           processed_content: processedCount,
           progress: Math.round(((i + 1) / allContent.length) * 100)
@@ -389,7 +398,7 @@ serve(async (req: Request) => {
 
     // Mark session as completed/failed with enhanced metadata
     const { error: completionError } = await supabase
-      .from('ai_training_sessions')
+      .from('assistant_ai_training_sessions')
       .update({ 
         status: finalStatus,
         completed_at: new Date().toISOString(),

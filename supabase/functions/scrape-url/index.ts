@@ -21,6 +21,7 @@ interface ScrapedContent {
   content: string
   description: string
   links: string[]
+  organization_id?: string
   scraped_at: string
 }
 
@@ -97,6 +98,9 @@ serve(async (req: Request) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
+    // Get user's organization ID
+    const { data: orgData } = await supabase.rpc('get_user_organization');
+    
     // Save scraped content to database
     const scrapedContent: ScrapedContent = {
       url,
@@ -104,11 +108,12 @@ serve(async (req: Request) => {
       content: textContent,
       description,
       links,
+      organization_id: orgData,
       scraped_at: new Date().toISOString()
     }
 
     const { data, error } = await supabase
-      .from('scraped_pages')
+      .from('assistant_scraped_pages')
       .upsert(scrapedContent, { onConflict: 'url' })
       .select()
 

@@ -18,7 +18,7 @@ export default function OrganizationSetupPage() {
         console.log("  Navigating to /login (no user).");
         navigate("/login");
       } else if (user) {
-        console.log("  Navigating to /dashboard (user exists, bypassing organization setup).");
+        console.log("  User exists, navigating to dashboard (organization created automatically).");
         navigate("/dashboard");
       }
     }
@@ -35,9 +35,14 @@ export default function OrganizationSetupPage() {
     );
   }
 
+  const handleOrganizationComplete = () => {
+    console.log("Organization setup completed, navigating to dashboard");
+    navigate("/dashboard");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <OrganizationSetup />
+      <OrganizationSetup onComplete={handleOrganizationComplete} />
     </div>
   );
 }

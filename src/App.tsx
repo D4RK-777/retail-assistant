@@ -17,7 +17,14 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route 
+            path="/login" 
+            element={
+              <ProtectedRoute requireAuth={false} requireOrg={false}>
+                <Login />
+              </ProtectedRoute>
+            } 
+          />
           <Route 
             path="/setup" 
             element={

@@ -54,7 +54,7 @@ export class AITrainingService {
   static async getTrainingSessions(): Promise<TrainingSession[]> {
     try {
       const { data: sessions, error } = await supabase
-        .from('ai_training_sessions')
+        .from('assistant_ai_training_sessions')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -113,7 +113,7 @@ export class AITrainingService {
     try {
       // Search through enhanced content chunks with improved categorization
       const { data: chunks, error } = await supabase
-        .from('content_chunks')
+        .from('assistant_content_chunks')
         .select('*')
         .textSearch('content', query, { type: 'websearch' })
         .order('importance_score', { ascending: false })
@@ -124,7 +124,7 @@ export class AITrainingService {
         
         // Fallback to simple content matching
         const { data: fallbackChunks, error: fallbackError } = await supabase
-          .from('content_chunks')
+          .from('assistant_content_chunks')
           .select('*')
           .ilike('content', `%${query}%`)
           .order('importance_score', { ascending: false })

@@ -23,14 +23,9 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      console.log('LAYOUT: Sign out successful, ProtectedRoute will handle redirect');
-      // Let ProtectedRoute handle the redirect automatically
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
+  const handleSignOut = () => {
+    console.log('LAYOUT: Sign out button clicked');
+    signOut();
   };
 
   return (

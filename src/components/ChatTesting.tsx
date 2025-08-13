@@ -160,9 +160,9 @@ const ChatTesting: React.FC = () => {
       <Card className="flex-1 flex flex-col h-full overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={womanAvatar} alt="LEXI AI Assistant" className="w-10 h-10 rounded-full object-cover" />
+            <img src={womanAvatar} alt="Retail AI Assistant" className="w-10 h-10 rounded-full object-cover" />
             <div>
-              <h3 className="text-lg font-semibold">LEXI</h3>
+              <h3 className="text-lg font-semibold">Retail Assistant</h3>
               <p className="text-sm text-muted-foreground">Ask me anything!</p>
             </div>
           </div>
@@ -222,8 +222,8 @@ const ChatTesting: React.FC = () => {
             <div className="space-y-4">
               {messages.length === 0 && (
                 <div className="text-center text-muted-foreground py-8">
-                  <img src={womanAvatar} alt="LEXI" className="w-20 h-20 mx-auto mb-4 rounded-full object-cover opacity-75" />
-                  <p>Start a conversation with LEXI!</p>
+                  <img src={womanAvatar} alt="Retail Assistant" className="w-20 h-20 mx-auto mb-4 rounded-full object-cover opacity-75" />
+                  <p>Start a conversation with your Retail Assistant!</p>
                   <p className="text-sm mt-2">Ask questions and get intelligent responses.</p>
                 </div>
               )}

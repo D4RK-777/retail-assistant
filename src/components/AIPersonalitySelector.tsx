@@ -62,12 +62,14 @@ const AIPersonalitySelector: React.FC = () => {
       // Generate personality-specific prompt
       const enhancedPrompt = PersonalityService.generatePrompt(personality, message, context);
       
-      // Call the chat-ai Supabase function
+      // Call the chat-ai Supabase function with personality information
       const { data, error } = await supabase.functions.invoke('chat-ai', {
         body: {
-          message: enhancedPrompt,
+          message: message, // Send original message, not enhanced prompt
           context: context,
-          sessionId: crypto.randomUUID()
+          sessionId: crypto.randomUUID(),
+          personality: personality.name,
+          personalityPrompt: enhancedPrompt // Send the enhanced prompt as personality prompt
         }
       });
 

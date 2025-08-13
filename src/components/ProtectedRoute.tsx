@@ -41,6 +41,12 @@ export default function ProtectedRoute({ children, requireAuth, requireOrg }: Pr
     return <Navigate to="/login" replace />;
   }
 
+  // If auth is NOT required (login page) but user is authenticated, redirect to dashboard
+  if (!requireAuth && user) {
+    console.log('PROTECTED ROUTE: Redirecting to /dashboard - user authenticated on login page');
+    return <Navigate to="/dashboard" replace />;
+  }
+
   // TEMPORARY BYPASS: Skip organization requirement completely
   // if (requireOrg && user && !organization) {
   //   console.log('PROTECTED ROUTE: Redirecting to /setup - no organization');

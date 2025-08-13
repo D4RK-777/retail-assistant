@@ -145,20 +145,113 @@ This project needs to be separated from the existing training data while maintai
 - **Testing**: Thorough testing before switching configurations
 - **Documentation**: Clear documentation of changes made
 
-## Success Criteria
-- [ ] New project has identical table structure
-- [ ] AI personalities work with clean database
-- [ ] Original training data remains accessible to other app
-- [ ] No data contamination between projects
-- [ ] All features function correctly
+## Phase 7: Google Gemini Flash 2.5 API Integration 🚀
 
-## Timeline Estimate
-- Phase 1: 1-2 hours (Analysis)
-- Phase 2: 2-3 hours (Database setup)
-- Phase 3: 1-2 hours (Code updates)
-- Phase 4: 1 hour (Verification)
-- Phase 5: 1-2 hours (Testing)
-- **Total**: 6-10 hours
+### Overview
+Integrate Google's Gemini Flash 2.5 model (AIzaSyB7c3PtZsdUceYnOjILswzXikfCI2nI2Jc) with the AI personalities system. Each of the 8 AI personalities will have access to the shared knowledge base while maintaining their unique personality layers.
+
+### Current System Analysis
+**Existing AI Personalities (8 total)**:
+1. **The Mentor** - Educational guidance for researchers (S+C DISC style)
+2. **The Catalyst** - Excitement and spontaneous purchases (I DISC style)
+3. **The Concierge** - Luxury personalized service (S DISC style)
+4. **The Optimizer** - Best value and cost analysis (C+D DISC style)
+5. **The Curator** - Sophisticated tastemaker (I+C DISC style)
+6. **The Companion** - Friendly, low-pressure browsing (S DISC style)
+7. **The Navigator** - Direct, efficient path to purchase (D DISC style)
+8. **The Guardian** - Problem resolution and service recovery (S DISC style)
+
+**Current API Integration**:
+- Uses Supabase Edge Function: `chat-ai/index.ts`
+- Currently calls Gemini API with hardcoded prompts
+- Knowledge base integration via `CrawlerService.generateKnowledgeContext()`
+- Personality prompts managed in `PersonalityService.ts`
+
+### Implementation Plan
+
+#### Step 1: Environment Configuration ✅
+- [x] Google API Key: `AIzaSyB7c3PtZsdUceYnOjILswzXikfCI2nI2Jc`
+- [x] Model: `gemini-2.5-flash` (already configured in chat-ai function)
+- [x] Verify API key is set in Supabase environment variables
+- [x] Development server running successfully on http://localhost:8081/
+
+#### Step 2: Enhanced Personality Integration ✅
+- [x] Update `chat-ai/index.ts` to handle personality-specific prompts
+- [x] Modify prompt structure to layer personality over knowledge base
+- [x] Ensure each personality maintains unique characteristics while accessing shared knowledge
+- [x] Add personality context to Gemini API calls
+- [x] Update `AIPersonalitySelector.tsx` to pass personality information
+- [x] Enhanced interaction logging with personality tracking
+
+#### Step 3: Knowledge Base Enhancement ✅
+- [x] Verify `assistant_content_chunks` table has proper embeddings
+- [x] Enhance context generation for personality-specific responses
+- [x] Implement semantic search for relevant knowledge retrieval
+- [x] Add personality-specific knowledge filtering
+- [x] Remove all flEX platform references from prompts and content
+- [x] Update all database queries to use 'assistant_' prefixed tables
+- [x] Replace flEX-specific content with generic retail knowledge
+
+#### Step 4: API Response Optimization ✅
+- [x] Optimize Gemini Flash 2.5 prompts for each personality
+- [x] Remove LEXI branding and replace with generic retail assistant
+- [x] Update all hardcoded flEX platform knowledge with retail operations
+- [x] Ensure consistent personality voice across responses
+- [x] Update interaction logging to use assistant tables
+
+#### Step 5: Testing & Validation ✅
+- [x] Test each of the 8 personalities with knowledge base integration
+- [x] Verify personality characteristics are maintained
+- [x] Test knowledge base access and relevance
+- [x] Performance testing with concurrent personality usage
+- [x] Verify all flEX references have been removed
+- [x] Confirm all database operations use assistant_ tables
+- [x] Fix URL scraping stuck in processing issue
+- [x] Update all edge functions to use assistant_ prefixed tables
+- [x] Deploy updated edge functions to Supabase
+- [x] Fix organization creation hanging issue
+- [x] Update OrganizationSetupPage logic to properly handle organization creation
+- [x] Add navigation after successful organization creation
+
+### Technical Implementation Details
+
+**Current Flow**:
+```
+User Message → AIPersonalitySelector → PersonalityService.generatePrompt() → chat-ai function → Gemini API
+```
+
+**Enhanced Flow**:
+```
+User Message → Personality Selection → Knowledge Base Query → Personality Prompt Layer → Gemini Flash 2.5 → Personality-Filtered Response
+```
+
+**Key Files to Modify**:
+1. `supabase/functions/chat-ai/index.ts` - Main API integration
+2. `src/services/PersonalityService.ts` - Personality prompt management
+3. `src/components/AIPersonalitySelector.tsx` - UI integration
+4. `src/services/CrawlerService.ts` - Knowledge base context generation
+
+### Success Criteria
+- [x] Google Gemini Flash 2.5 API integrated
+- [ ] All 8 AI personalities maintain unique characteristics
+- [ ] Each personality has access to shared knowledge base
+- [ ] Personality layer properly applied over knowledge responses
+- [ ] Response quality and consistency maintained
+- [ ] Performance optimized for concurrent usage
+
+### Timeline Estimate
+- Step 1: Environment Setup - 30 minutes ✅
+- Step 2: Personality Integration - 2-3 hours
+- Step 3: Knowledge Base Enhancement - 1-2 hours
+- Step 4: API Optimization - 1-2 hours
+- Step 5: Testing & Validation - 1-2 hours
+- **Total**: 5-9 hours
+
+## Previous Phases Summary
+- Phase 1-6: Database separation, authentication, TypeScript fixes ✅
+- All Assistant tables created and configured ✅
+- Multi-tenant authentication system implemented ✅
+- TypeScript errors resolved ✅
 
 ## Implementation Steps
 

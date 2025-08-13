@@ -48,9 +48,12 @@ export class FileUploadService {
         }
       }
 
+      // Get user's organization ID
+      const { data: orgData } = await supabase.rpc('get_user_organization');
+      
       // Save file metadata to database
       const { data: dbData, error: dbError } = await supabase
-        .from('uploaded_files')
+        .from('assistant_uploaded_files')
         .insert({
           file_name: fileName,
           original_name: file.name,
@@ -58,7 +61,9 @@ export class FileUploadService {
           file_type: fileExt || 'unknown',
           mime_type: file.type,
           storage_path: filePath,
-          content: content || null
+          content: content || null,
+          organization_id: orgData,
+          uploaded_by: (await supabase.auth.getUser()).data.user?.id
         })
         .select()
         .single();
@@ -79,10 +84,20 @@ export class FileUploadService {
 
   static async getUploadedFiles(): Promise<UploadedFile[]> {
     try {
-      const { data, error } = await supabase
-        .from('uploaded_files')
+      // Get user's organization ID
+      const { data: orgData } = await supabase.rpc('get_user_organization');
+      
+      let query = supabase
+        .from('assistant_uploaded_files')
         .select('*')
         .order('uploaded_at', { ascending: false });
+      
+      // Only filter by organization if user has one
+      if (orgData) {
+        query = query.eq('organization_id', orgData);
+      }
+      
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching uploaded files:', error);
@@ -100,7 +115,7 @@ export class FileUploadService {
     try {
       // First get the file info to delete from storage
       const { data: fileData, error: fetchError } = await supabase
-        .from('uploaded_files')
+        .from('assistant_uploaded_files')
         .select('storage_path')
         .eq('id', id)
         .single();
@@ -122,7 +137,7 @@ export class FileUploadService {
 
       // Delete from database
       const { error: dbError } = await supabase
-        .from('uploaded_files')
+        .from('assistant_uploaded_files')
         .delete()
         .eq('id', id);
 

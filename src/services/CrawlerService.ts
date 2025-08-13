@@ -78,11 +78,17 @@ export class CrawlerService {
       // Get user's organization ID
       const { data: orgData } = await supabase.rpc('get_user_organization');
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('assistant_scraped_pages')
         .select('*')
-        .eq('organization_id', orgData)
-        .order('scraped_at', { ascending: false })
+        .order('scraped_at', { ascending: false });
+      
+      // Only filter by organization if user has one
+      if (orgData) {
+        query = query.eq('organization_id', orgData);
+      }
+      
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching scraped pages:', error)

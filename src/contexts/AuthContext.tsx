@@ -138,22 +138,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signOut = async () => {
+  const signOut = () => {
     console.log('Attempting to sign out...');
-    setLoading(true);
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error.message);
-    } else {
-      console.log('Successfully signed out from Supabase.');
-      // Clear local state
-      setUser(null);
-      setProfile(null);
-      setOrganization(null);
-      setSession(null);
-    }
-    setLoading(false);
-    // Removed manual window.location redirect; routing will be handled by caller (e.g., Layout) and ProtectedRoute
+    
+    // IMMEDIATE redirect - don't wait for anything
+    window.location.href = '/login';
+    
+    // Clear everything in background (won't block redirect)
+    setUser(null);
+    setProfile(null);
+    setOrganization(null);
+    setSession(null);
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Async cleanup without blocking
+    supabase.auth.signOut({ scope: 'local' }).catch(console.error);
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
