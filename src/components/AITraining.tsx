@@ -46,7 +46,7 @@ export function AITraining() {
               
               // Mark as failed due to timeout
               await supabase
-                .from('ai_training_sessions')
+                .from('flex_chatbot_ai_training_sessions')
                 .update({ 
                   status: 'failed',
                   completed_at: new Date().toISOString(),
@@ -192,7 +192,7 @@ export function AITraining() {
     try {
       // Mark session as cancelled in database
       const { error } = await supabase
-        .from('ai_training_sessions')
+        .from('flex_chatbot_ai_training_sessions')
         .update({ 
           status: 'failed',
           completed_at: new Date().toISOString(),

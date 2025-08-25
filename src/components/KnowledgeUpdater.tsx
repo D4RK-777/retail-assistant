@@ -10,7 +10,7 @@ export const KnowledgeUpdater = () => {
     setLoading(true);
     try {
       // COMPLETE KNOWLEDGE REBUILD - Clear everything and add comprehensive Meta documentation
-      await supabase.from('content_chunks').delete().gte('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('flex_chatbot_content_chunks').delete().gte('id', '00000000-0000-0000-0000-000000000000');
       
       // COMPREHENSIVE META WHATSAPP BUSINESS API KNOWLEDGE
       const metaKnowledge = [
@@ -271,7 +271,7 @@ This represents Meta's complete template policy framework for WhatsApp Business 
 
       // Insert all comprehensive knowledge
       const insertPromises = metaKnowledge.map(item => 
-        supabase.from('content_chunks').insert({
+        supabase.from('flex_chatbot_content_chunks').insert({
           ...item,
           source_context: {
             source_type: 'meta_official_documentation',

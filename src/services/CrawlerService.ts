@@ -76,7 +76,7 @@ export class CrawlerService {
   static async getScrapedPages(): Promise<ScrapedPage[]> {
     try {
       const { data, error } = await supabase
-        .from('scraped_pages')
+        .from('flex_chatbot_scraped_pages')
         .select('*')
         .order('scraped_at', { ascending: false })
 
@@ -93,11 +93,11 @@ export class CrawlerService {
   }
 
   static async deleteScrapedPage(url: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('scraped_pages')
-        .delete()
-        .eq('url', url)
+     try {
+       const { error } = await supabase
+         .from('flex_chatbot_scraped_pages')
+         .delete()
+         .eq('url', url)
 
       if (error) {
         console.error('Error deleting scraped page:', error)
@@ -114,7 +114,7 @@ export class CrawlerService {
   static async clearAllPages(): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('scraped_pages')
+        .from('flex_chatbot_scraped_pages')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all rows
 
@@ -152,7 +152,7 @@ export class CrawlerService {
   static async searchPages(query: string): Promise<ScrapedPage[]> {
     try {
       const { data, error } = await supabase
-        .from('scraped_pages')
+        .from('flex_chatbot_scraped_pages')
         .select('*')
         .textSearch('content', query)
         .order('scraped_at', { ascending: false })

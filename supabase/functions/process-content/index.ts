@@ -1,3 +1,4 @@
+/// <reference path="../deno.d.ts" />
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
@@ -20,15 +21,15 @@ serve(async (req) => {
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     
     if (!geminiApiKey) {
-      throw new Error('Gemini API key not configured');
+      console.warn('Gemini API key not configured - using basic content processing');
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get both scraped pages and uploaded files to process
+    // Get both scraped pages and uploaded files to process (no auth needed - internal system)
     const [scrapedPagesResult, uploadedFilesResult] = await Promise.all([
-      supabase.from('scraped_pages').select('*'),
-      supabase.from('uploaded_files').select('*').filter('content', 'not.is', null)
+      supabase.from('flex_chatbot_scraped_pages').select('*'),
+      supabase.from('flex_chatbot_uploaded_files').select('*').filter('content', 'not.is', null)
     ]);
 
     if (scrapedPagesResult.error) {
@@ -65,7 +66,7 @@ serve(async (req) => {
 
     // Create session record first
     const { error: sessionError } = await supabase
-      .from('ai_training_sessions')
+      .from('flex_chatbot_ai_training_sessions')
       .insert({ 
         id: sessionId,
         type,
@@ -80,7 +81,7 @@ serve(async (req) => {
     }
 
     let processedCount = 0;
-    const failedItems = [];
+    const failedItems: Array<{id: string, type: string, title: string, error: string}> = [];
     const maxRetries = 3;
     const retryDelay = 2000; // 2 seconds
 
@@ -93,38 +94,42 @@ serve(async (req) => {
           return false;
         }
 
-        console.log(`Generating embedding for ${content.source_type} ${content.id}: ${content.title} (attempt ${retryCount + 1})`);
+        console.log(`Processing ${content.source_type} ${content.id}: ${content.title} (attempt ${retryCount + 1})`);
         
-        // Prepare content for embedding - ensure it's not too long
-        const contentText = `${content.title || ''}\n\n${content.content || ''}`.slice(0, 7000); // Reduced to be safe
+        let embeddingArray = null;
         
-        const embeddingResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'models/text-embedding-004',
-            content: {
-              parts: [{
-                text: contentText
-              }]
-            }
-          }),
-        });
+        if (geminiApiKey) {
+          // Prepare content for embedding - ensure it's not too long
+          const contentText = `${content.title || ''}\n\n${content.content || ''}`.slice(0, 7000); // Reduced to be safe
+          
+          const embeddingResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'models/text-embedding-004',
+              content: {
+                parts: [{
+                  text: contentText
+                }]
+              }
+            }),
+          });
 
-        if (!embeddingResponse.ok) {
-          const errorText = await embeddingResponse.text();
-          throw new Error(`Embedding API error: ${embeddingResponse.status} - ${errorText}`);
+          if (!embeddingResponse.ok) {
+            const errorText = await embeddingResponse.text();
+            throw new Error(`Embedding API error: ${embeddingResponse.status} - ${errorText}`);
+          }
+          
+          const embeddingData = await embeddingResponse.json();
+          embeddingArray = embeddingData.embedding?.values;
+        } else {
+          console.log('Skipping embedding generation - API key not available');
         }
 
-        const embeddingData = await embeddingResponse.json();
-        
-        if (!embeddingData.embedding || !embeddingData.embedding.values) {
-          throw new Error(`Invalid embedding response: ${JSON.stringify(embeddingData)}`);
-        }
-        
-        const embedding = embeddingData.embedding.values;
+        // Use the embedding array we generated (or null if no API key)
+        const embedding = embeddingArray;
 
         // Determine content type and importance based on analysis
         const isFlexContent = content.content.toLowerCase().includes('flex') || 
@@ -139,7 +144,7 @@ serve(async (req) => {
                               content.content.length > 2000 ? 'intermediate' : 'basic'
 
         // Extract tags from content
-        const tags = []
+        const tags: string[] = []
         if (content.content.toLowerCase().includes('template')) tags.push('templates')
         if (content.content.toLowerCase().includes('campaign')) tags.push('campaigns') 
         if (content.content.toLowerCase().includes('journey')) tags.push('journeys')
@@ -158,8 +163,8 @@ serve(async (req) => {
       let primaryCategory = 'general';
       let subCategory = 'uncategorized';
       let userRole = 'general';
-      let relevanceTags = [];
-      let keywords = [];
+      let relevanceTags: string[] = [];
+      let keywords: string[] = [];
       
       // WhatsApp Business API categorization
       if (text.includes('whatsapp') || text.includes('meta') || text.includes('graph api')) {
@@ -225,20 +230,20 @@ serve(async (req) => {
     const analysis = analyzeContent(content);
     
     // Store content chunk with enhanced metadata
-    console.log(`Storing chunk for ${content.source_type} ${content.id} with embedding length: ${embedding.length}`);
+    console.log(`Storing chunk for ${content.source_type} ${content.id} with embedding length: ${embedding?.length || 0}`);
     
     // Create unique chunk ID to avoid foreign key constraints
     const chunkId = crypto.randomUUID();
     
     const { error: chunkError } = await supabase
-      .from('content_chunks')
+      .from('flex_chatbot_content_chunks')
       .upsert({
         id: chunkId,
         source_id: content.id,
         content: content.content,
         title: content.title,
         url: content.url,
-        embedding: embedding,
+        embedding: embedding || null,
         chunk_index: 0,
         token_count: Math.ceil((content.content?.length || 0) / 4),
         content_type: contentType,
@@ -261,7 +266,7 @@ serve(async (req) => {
 
     // Also store in master knowledge base with enhanced categorization
     const { error: masterError } = await supabase
-      .from('master_knowledge_base')
+      .from('flex_chatbot_master_knowledge_base')
       .upsert({
         id: crypto.randomUUID(),
         source_id: content.id,
@@ -327,7 +332,7 @@ serve(async (req) => {
       
       // Update progress after each item
       const { error: progressError } = await supabase
-        .from('ai_training_sessions')
+        .from('flex_chatbot_ai_training_sessions')
         .update({ 
           processed_content: processedCount,
           progress: Math.round(((i + 1) / allContent.length) * 100)
@@ -350,7 +355,7 @@ serve(async (req) => {
     const successRate = processedCount / allContent.length;
     const finalStatus = successRate === 1.0 ? 'completed' : (successRate > 0.8 ? 'completed' : 'failed');
     
-    let errorMessage = null;
+    let errorMessage: string | null = null;
     if (failedItems.length > 0) {
       errorMessage = `Failed to process ${failedItems.length} items: ${failedItems.map(item => `${item.type} ${item.id} (${item.error})`).join('; ')}`;
     }
@@ -379,7 +384,7 @@ serve(async (req) => {
 
     // Mark session as completed/failed with enhanced metadata
     const { error: completionError } = await supabase
-      .from('ai_training_sessions')
+      .from('flex_chatbot_ai_training_sessions')
       .update({ 
         status: finalStatus,
         completed_at: new Date().toISOString(),

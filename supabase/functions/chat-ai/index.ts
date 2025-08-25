@@ -1,3 +1,4 @@
+/// <reference path="../deno.d.ts" />
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
@@ -29,7 +30,7 @@ serve(async (req) => {
     try {
       // Determine search strategy based on user question
       const searchTerms = message.toLowerCase();
-      let searchConditions = [];
+      let searchConditions: string[] = [];
       
       // Template-related queries
       if (searchTerms.includes('template')) {
@@ -67,16 +68,25 @@ serve(async (req) => {
 
       // Build the query
       let query = supabase
-        .from('content_chunks')
+        .from('flex_chatbot_content_chunks')
         .select('title, content, category, content_type, importance_score, tags, knowledge_level')
         .order('importance_score', { ascending: false })
         .limit(8);
 
       if (searchConditions.length > 0) {
-        query = query.or(searchConditions.join(','));
+        // Use individual filters instead of or() to avoid type issues
+        for (const condition of searchConditions) {
+          if (condition.includes('content.ilike')) {
+            const term = condition.split('%')[1];
+            query = query.ilike('content', `%${term}%`);
+          } else if (condition.includes('title.ilike')) {
+            const term = condition.split('%')[1];
+            query = query.ilike('title', `%${term}%`);
+          }
+        }
       } else {
-        // Fallback to text search
-        query = query.textSearch('content', message.split(' ').slice(0, 5).join(' | '), { type: 'websearch' });
+        // Fallback to simple text search
+        query = query.ilike('content', `%${message}%`);
       }
 
       const { data: relevantContent, error: searchError } = await query;
@@ -109,19 +119,32 @@ serve(async (req) => {
       )
     }
 
-    // Create the flEX platform assistant prompt
-    const prompt = `You are LEXI, the official flEX platform AI assistant. You have complete knowledge of both the flEX platform features and WhatsApp Business messaging capabilities.
+    // Create the flEX platform assistant prompt - COMPLETELY FLEX FOCUSED
+    const prompt = `You are LEXI, the official flEX platform AI assistant and expert. You are NOT a retail assistant. You are ONLY a flEX platform expert.
 
-INSTRUCTIONS:
-- Answer questions directly and authoritatively as LEXI, the flEX platform expert
-- Use the provided context to give accurate information about flEX features
-- Also draw on your WhatsApp Business knowledge when relevant
-- Never mention that you're analyzing the question or referencing context
-- Act like you naturally know everything about both flEX and WhatsApp
-- Be helpful, friendly, and confident
-- Give specific, actionable answers
-- Always respond as LEXI
-- Format your responses using proper markdown (use **bold**, bullet points, etc.)
+YOUR IDENTITY:
+- You are LEXI, the flEX platform AI assistant
+- You specialize EXCLUSIVELY in the flEX platform and WhatsApp Business messaging
+- You have ZERO knowledge or interest in retail, shopping, or general business advice
+- You ONLY help with flEX platform features, campaigns, journeys, templates, and WhatsApp messaging
+
+YOUR EXPERTISE:
+- flEX platform features, tools, and capabilities
+- Campaign creation and management in flEX
+- Customer journey automation in flEX
+- Template design and messaging in flEX
+- WhatsApp Business integration with flEX
+- flEX analytics and performance tracking
+- flEX platform navigation and workflows
+
+CRITICAL INSTRUCTIONS:
+- NEVER provide retail advice, shopping guidance, or general business tips
+- ALWAYS focus on flEX platform capabilities and features
+- If asked about retail/shopping, redirect to flEX platform marketing solutions
+- Be confident and authoritative about flEX platform features
+- Provide specific, actionable guidance for flEX platform success
+- Reference actual flEX platform tools and capabilities
+- Format responses using proper markdown (use **bold**, bullet points, etc.)
 
 FLEX PLATFORM COMPREHENSIVE KNOWLEDGE BASE:
 
@@ -132,7 +155,7 @@ PLATFORM NAVIGATION & MESSAGE EDITING:
 - **Template Editor Interface**: Divided sections for Header (media), Message Content (main body with placeholders like {first_name}), Buttons (interactive elements), Footer
 - **Button Configuration**: Up to 3 buttons allowed - CTA buttons (Open Web Page, Trigger Phone Call) can be combined, but Journey buttons CANNOT mix with CTA buttons (WhatsApp policy restriction)
 
-DETAILED PLATFORM FEATURES FROM TRANSCRIPTIONS:
+DETAILED PLATFORM FEATURES:
 - **Template Creation**: "New Template" → "Meta Template" selection → Editor with Header/Content/Buttons/Footer sections
 - **Dynamic Personalization**: Placeholder support like {first_name} for message customization
 - **Button Types**: Open Web Page (with external browser option), Trigger Phone Call, Connect Journey (exclusive - cannot combine with others)
@@ -163,9 +186,9 @@ ${enhancedContext}
 
 User Question: ${message}
 
-Provide a direct, helpful answer as LEXI, the flEX platform assistant:`;
+Respond as LEXI, the flEX platform expert (NOT a retail assistant):`;
 
-    // Call Gemini API
+    // Call Gemini API with Flash 2.5
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {

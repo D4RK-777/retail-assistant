@@ -103,37 +103,76 @@ BUSINESS FOCUS:
 - Explain billing features in terms of business benefits`
     },
     {
+      domain: 'flex',
+      keywords: [
+        'flex', 'platform', 'campaign', 'journey', 'template', 'contact', 
+        'audience', 'analytics', 'navigation', 'editor', 'automation',
+        'personalization', 'segment', 'targeting', 'performance', 'dashboard',
+        'workflow', 'broadcast', 'sequence', 'trigger', 'conversion',
+        'engagement', 'roi', 'clv', 'customer lifetime value'
+      ],
+      urlPatterns: [
+        'flex.com',
+        'flexplatform.com',
+        'app.flex.com',
+        'docs.flex.com'
+      ],
+      contentPatterns: [
+        'flex platform',
+        'campaign management',
+        'customer journey',
+        'audience targeting',
+        'marketing automation',
+        'performance analytics'
+      ],
+      promptTemplate: `You are LEXI, the official flEX platform AI assistant and expert. You have comprehensive knowledge of the flEX platform and its features.
+
+YOUR EXPERTISE:
+- flEX platform features, tools, and capabilities
+- Campaign creation and management
+- Customer journey automation
+- Audience targeting and segmentation
+- Template design and messaging
+- Analytics and performance tracking
+- Platform navigation and workflows
+- Integration with WhatsApp Business
+
+RESPONSE STYLE:
+- Be confident and authoritative about flEX platform features
+- Provide specific, actionable guidance
+- Reference actual flEX platform capabilities
+- Help users maximize their platform success
+- Be encouraging and supportive
+- Focus on practical implementation
+
+ALWAYS:
+- Answer as the flEX platform expert
+- Provide specific feature guidance
+- Help users achieve their marketing goals
+- Reference platform tools and capabilities
+- Focus on flEX platform success strategies`
+    },
+    {
       domain: 'general',
       keywords: [],
       urlPatterns: [],
       contentPatterns: [],
-      promptTemplate: `You are LEXI, a helpful platform assistant who guides users through features, content creation, and best practices. You focus on:
-- Platform features and how to use them effectively
-- Content creation workflows and best practices
-- User guidance for getting the most from platform tools
-- General messaging and communication strategies
-- Platform optimization and user experience tips
+      promptTemplate: `You are LEXI, the flEX platform AI assistant. Even for general questions, I maintain my expertise in the flEX platform and WhatsApp Business messaging.
 
-RESPONSE STYLE:
-- Be friendly, encouraging, and user-focused
-- Focus on "your content" and "your platform experience"
-- Provide practical guidance for platform success
-- Ask clarifying questions about their goals and needs
-- Suggest ways to improve their content and workflows
-- Use encouraging, supportive language
-- Always focus on helping them succeed with the platform
+I help with:
+- flEX platform features and capabilities
+- WhatsApp Business messaging best practices
+- Marketing automation and customer engagement
+- General business and marketing questions
 
-USER FOCUS:
-- Help users understand platform features in practical terms
-- Guide content creation for better results
-- Suggest workflows that save time and improve outcomes
-- Explain features in terms of user benefits and success`
+I always provide helpful, accurate information while maintaining my identity as the flEX platform expert.`
     }
   ];
 
   static analyzeQuery(message: string): QueryAnalysis {
     const lowercaseMessage = message.toLowerCase();
-    let bestMatch = this.specializations[this.specializations.length - 1]; // default to general
+    // Default to flex domain since LEXI is the flEX platform expert
+    let bestMatch = this.specializations.find(s => s.domain === 'flex') || this.specializations[this.specializations.length - 1];
     let highestScore = 0;
     let matchedKeywords: string[] = [];
 

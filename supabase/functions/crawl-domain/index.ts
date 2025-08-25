@@ -1,3 +1,4 @@
+/// <reference path="../deno.d.ts" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -38,7 +39,8 @@ serve(async (req) => {
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
     while (toVisit.length > 0 && visited.size < maxPages) {
-      const currentUrl = toVisit.shift()!
+      const currentUrl = toVisit.shift()
+      if (!currentUrl) continue
       
       if (visited.has(currentUrl)) continue
       visited.add(currentUrl)
@@ -128,12 +130,12 @@ serve(async (req) => {
           title,
           content: textContent,
           description,
-          links,
+          links: links.filter((link): link is string => link !== null),
           scraped_at: new Date().toISOString()
         }
 
         const { error } = await supabase
-          .from('scraped_pages')
+          .from('flex_chatbot_scraped_pages')
           .upsert(scrapedContent, { onConflict: 'url' })
 
         if (error) {
